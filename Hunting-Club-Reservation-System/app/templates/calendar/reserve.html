@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Reserve Dates — Silvies Club{% endblock %}
+
+{% block content %}
+<h1 style="font-size: 1.5rem; margin-bottom: 1rem;">Reserve Your Dates</h1>
+
+<div class="grid-2">
+    <div class="card">
+        <h2 class="card-title">Select Dates</h2>
+        <p class="text-small text-muted mb-2">
+            Choose up to 7 days. Multi-day reservations during May–June must start on a Friday.
+        </p>
+
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                {{ form.start_date.label }}
+                {{ form.start_date(type="date", min=season.season_start.isoformat(), max=season.season_end.isoformat()) }}
+            </div>
+            <div class="form-group">
+                {{ form.end_date.label }}
+                {{ form.end_date(type="date", min=season.season_start.isoformat(), max=season.season_end.isoformat()) }}
+            </div>
+            <div class="form-group">
+                {{ form.notes.label }}
+                {{ form.notes(rows=3, placeholder="e.g., Arriving Friday evening, leaving Wednesday morning") }}
+            </div>
+            <button type="submit" class="btn btn-primary">Confirm Reservation</button>
+            <a href="{{ url_for('calendar.view') }}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2 class="card-title">Mini Calendar</h2>
+        <div id="mini-calendar"></div>
+
+        {% if reservations %}
+        <h3 class="card-title mt-2" style="font-size: 0.95rem;">Existing Reservations</h3>
+        {% for r in reservations %}
+        <div class="text-small" style="padding: 0.3rem 0; border-bottom: 1px solid var(--gray-200);">
+            <strong>{{ r.member_name }}</strong>: {{ r.start_date }} to {{ r.end_date }}
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/calendar.js') }}"></script>
+{% if season %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        renderCalendar(
+            'mini-calendar',
+            '{{ season.season_start.isoformat() }}',
+            '{{ season.season_end.isoformat() }}',
+            {{ reservations | tojson }},
+            false,
+            ''
+        );
+    });
+</script>
+{% endif %}
+{% endblock %}

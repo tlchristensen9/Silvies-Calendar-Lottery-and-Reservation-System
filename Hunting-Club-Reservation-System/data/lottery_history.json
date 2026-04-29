@@ -1,0 +1,22 @@
+[
+  {
+    "lottery_id": "lottery_20250715_125305_ca3dfec3",
+    "period_id": "2025-05-02_2025-05-08",
+    "participants": [
+      1,
+      4,
+      5,
+      9,
+      13,
+      14,
+      17,
+      18,
+      20
+    ],
+    "winner_id": null,
+    "draw_date": null,
+    "confirmation_deadline": null,
+    "status": "pending",
+    "notes": ""
+  }
+]
