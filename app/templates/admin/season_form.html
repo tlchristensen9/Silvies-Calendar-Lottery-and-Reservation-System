@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Create Season — Silvies Club Admin{% endblock %}
+
+{% block content %}
+<div style="max-width: 500px;">
+    <h1 style="font-size: 1.5rem; margin-bottom: 1rem;">Create New Season</h1>
+
+    <div class="card">
+        <p class="text-small text-muted mb-2">
+            Set up a new reservation season. Dates are optional — you can set them later.
+            The season covers May and June of the selected year.
+        </p>
+
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                {{ form.year.label }}
+                {{ form.year(placeholder="2027") }}
+            </div>
+            <div class="form-group">
+                {{ form.phase1_optin_start.label }}
+                {{ form.phase1_optin_start(type="date") }}
+            </div>
+            <div class="form-group">
+                {{ form.phase1_draft_date.label }}
+                {{ form.phase1_draft_date(type="date") }}
+            </div>
+            <div class="form-group">
+                {{ form.phase2_start.label }}
+                {{ form.phase2_start(type="date") }}
+            </div>
+            <div class="form-group">
+                {{ form.phase3_start.label }}
+                {{ form.phase3_start(type="date") }}
+            </div>
+            <button type="submit" class="btn btn-primary">Create Season</button>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

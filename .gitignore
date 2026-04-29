@@ -41,3 +41,10 @@ Thumbs.db
 # Application specific
 hunting_club.log
 data/backup_*
+
+# Flask / new web app
+instance/
+*.db
+.env
+.flaskenv
+migrations/
