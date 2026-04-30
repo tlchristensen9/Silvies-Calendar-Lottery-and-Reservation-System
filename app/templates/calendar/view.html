@@ -15,13 +15,7 @@
 </div>
 {% else %}
 
-<div class="legend">
-    <div class="legend-item"><div class="legend-color legend-available"></div> Available</div>
-    <div class="legend-item"><div class="legend-color legend-reserved"></div> Reserved</div>
-    {% if can_reserve %}
-    <div class="legend-item"><div class="legend-color legend-selected"></div> Click to select</div>
-    {% endif %}
-</div>
+<!-- Legend is rendered by calendar.js -->
 
 {% if season.phase in ('phase1_draft', 'phase3_reverse') and draft_order %}
 <div class="card mb-2">
@@ -113,7 +107,8 @@
             '{{ season.season_end.isoformat() }}',
             {{ reservations | tojson }},
             {{ can_reserve | tojson }},
-            '{{ url_for("calendar.reserve") }}'
+            '{{ url_for("calendar.reserve") }}',
+            {{ month_config | tojson }}
         );
     });
 </script>

@@ -98,10 +98,22 @@ class Season(db.Model):
 
     @property
     def season_start(self):
-        return date(self.year, 5, 1)
+        """First day of the full calendar year."""
+        return date(self.year, 1, 1)
 
     @property
     def season_end(self):
+        """Last day of the full calendar year."""
+        return date(self.year, 12, 31)
+
+    @property
+    def lottery_start(self):
+        """First day of lottery-controlled months (May 1)."""
+        return date(self.year, 5, 1)
+
+    @property
+    def lottery_end(self):
+        """Last day of lottery-controlled months (June 30)."""
         return date(self.year, 6, 30)
 
     def __repr__(self):

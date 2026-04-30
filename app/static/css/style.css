@@ -247,6 +247,67 @@ tr:hover { background: var(--gray-100); }
 .calendar-day.today { border-color: var(--blue); border-width: 2px; }
 .calendar-day.selected { background: var(--green-bg); border-color: var(--green-mid); border-width: 2px; }
 
+/* Month type blocks */
+.calendar-month-block {
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+.month-open {
+    background: var(--green-bg);
+    border: 1px solid var(--green-light);
+}
+.month-lottery {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+}
+.month-hunting {
+    background: #fdf4e7;
+    border: 1px solid var(--brown-light);
+}
+.month-type-label {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--gray-500);
+    margin-left: 0.5rem;
+}
+.hunting-notice {
+    font-size: 0.85rem;
+    color: var(--brown-mid);
+    font-style: italic;
+    margin-bottom: 0.5rem;
+}
+.calendar-day.hunting-day {
+    background: #f5ebe0;
+    color: var(--brown-mid);
+    cursor: default;
+}
+
+/* Calendar legend (JS-rendered) */
+.calendar-legend {
+    display: flex;
+    gap: 1.25rem;
+    margin: 0.75rem 0 1.25rem;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+}
+.calendar-legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.legend-swatch {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    border: 1px solid var(--gray-300);
+}
+.legend-open { background: var(--green-bg); border-color: var(--green-light); }
+.legend-lottery { background: #fef3c7; border-color: #fde68a; }
+.legend-hunting { background: #f5ebe0; border-color: var(--brown-light); }
+.legend-reserved { background: var(--sand); border-color: var(--brown-light); }
+
 /* Draft order list */
 .draft-list { list-style: none; padding: 0; }
 .draft-list li {

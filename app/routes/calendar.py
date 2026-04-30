@@ -1,6 +1,6 @@
 """Calendar routes: view calendar, make/cancel reservations."""
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from flask import (Blueprint, render_template, redirect, url_for,
                    flash, request, jsonify)
 from flask_login import login_required, current_user
@@ -38,12 +38,15 @@ def view():
                            .order_by(DraftOrder.position)
                            .all())
 
+    month_config = PhaseEngine.get_month_config() if season else {}
+
     return render_template('calendar/view.html',
                            season=season,
                            reservations=reservations,
                            can_reserve=can_reserve,
                            reserve_reason=reserve_reason,
-                           draft_order=draft_order)
+                           draft_order=draft_order,
+                           month_config=month_config)
 
 
 @calendar_bp.route('/reserve', methods=['GET', 'POST'])
@@ -76,7 +79,7 @@ def reserve():
         else:
             reservation = PhaseEngine.make_reservation(
                 season, current_user, start, end, notes=form.notes.data)
-            flash(f'Reserved {start} to {end} — {reservation.num_days} day(s).', 'success')
+            flash(f'Reserved {start} to {end} - {reservation.num_days} day(s).', 'success')
             return redirect(url_for('calendar.view'))
 
     # Pre-populate with query params from calendar click
@@ -143,7 +146,7 @@ def opt_in():
     if existing:
         flash('You are already opted in.', 'info')
     else:
-        # Temp position — reassigned when the draw runs
+        # Temp position - reassigned when the draw runs
         max_pos = db.session.query(db.func.max(DraftOrder.position)).filter_by(season_id=season.id).scalar() or 0
         entry = DraftOrder(season_id=season.id, member_id=current_user.id, position=max_pos + 1)
         db.session.add(entry)
@@ -159,7 +162,8 @@ def api_available_dates():
     """JSON endpoint returning date availability for the season calendar."""
     season = PhaseEngine.get_active_season()
     if not season:
-        return jsonify({'season_start': None, 'season_end': None, 'reserved_dates': []})
+        return jsonify({'season_start': None, 'season_end': None,
+                        'reserved_dates': [], 'month_config': {}})
 
     reservations = Reservation.query.filter_by(
         season_id=season.id, is_cancelled=False).all()
@@ -170,10 +174,12 @@ def api_available_dates():
         d = r.start_date
         while d <= r.end_date:
             reserved.add(d.isoformat())
-            d += __import__('datetime').timedelta(days=1)
+            d += timedelta(days=1)
 
     return jsonify({
         'season_start': season.season_start.isoformat(),
         'season_end': season.season_end.isoformat(),
         'reserved_dates': sorted(reserved),
+        'month_config': PhaseEngine.get_month_config(),
+        'phase': season.phase,
     })

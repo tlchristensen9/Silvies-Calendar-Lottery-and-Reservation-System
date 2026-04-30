@@ -15,7 +15,9 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Season configuration
-    SEASON_MONTHS = [5, 6]  # May and June
+    LOTTERY_MONTHS = [5, 6]  # May and June — controlled by draft/lottery
+    OPEN_BOOKING_MONTHS = [7, 12, 1, 2, 3, 4]  # Jul + Dec–Apr — open to all members
+    HUNTING_SEASON_MONTHS = [8, 9, 10, 11]  # Aug–Nov — cabin open, no reservations needed
     MAX_RESERVATION_DAYS = 7
     PHASE1_PICK_DAYS = 5  # Days each member has to pick in Phase 1
     PHASE3_PICK_DAYS = 3  # Days each member has to pick in Phase 3
