@@ -38,6 +38,14 @@
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-sm" style="background: var(--amber); color: white;">Reset PW</button>
                     </form>
+                    {% if m.id != current_user.id %}
+                    <form method="POST" action="{{ url_for('admin.delete_member', member_id=m.id) }}"
+                          style="display: inline;"
+                          onsubmit="return confirm('DELETE {{ m.name }}? This will remove all their reservations and cannot be undone.');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}

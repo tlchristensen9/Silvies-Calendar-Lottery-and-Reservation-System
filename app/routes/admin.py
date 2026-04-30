@@ -116,6 +116,23 @@ def reset_member_password(member_id):
     return redirect(url_for('admin.members'))
 
 
+@admin_bp.route('/members/<int:member_id>/delete', methods=['POST'])
+@admin_required
+def delete_member(member_id):
+    member = Member.query.get_or_404(member_id)
+    if member.id == current_user.id:
+        flash('You cannot delete your own account.', 'danger')
+        return redirect(url_for('admin.members'))
+    name = member.name
+    # Cancel any active reservations
+    Reservation.query.filter_by(member_id=member.id).delete()
+    DraftOrder.query.filter_by(member_id=member.id).delete()
+    db.session.delete(member)
+    db.session.commit()
+    flash(f'Member {name} has been deleted.', 'info')
+    return redirect(url_for('admin.members'))
+
+
 # --- Season Management ---
 
 @admin_bp.route('/season/create', methods=['GET', 'POST'])

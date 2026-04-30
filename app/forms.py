@@ -24,8 +24,37 @@ class ChangePasswordForm(FlaskForm):
     submit = SubmitField('Change Password')
 
 
+class ForgotPasswordForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    submit = SubmitField('Send Reset Link')
+
+
+class ResetPasswordForm(FlaskForm):
+    new_password = PasswordField('New Password', validators=[
+        DataRequired(), Length(min=6, message='Password must be at least 6 characters.')
+    ])
+    confirm_password = PasswordField('Confirm New Password', validators=[
+        DataRequired(), EqualTo('new_password', message='Passwords must match.')
+    ])
+    submit = SubmitField('Reset Password')
+
+
+class SettingsForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    phone = StringField('Phone', validators=[Optional(), Length(max=20)])
+    current_password = PasswordField('Current Password', validators=[DataRequired()],
+                                     description='Required to save any changes')
+    new_password = PasswordField('New Password (leave blank to keep current)', validators=[
+        Optional(), Length(min=6, message='Password must be at least 6 characters.')
+    ])
+    confirm_password = PasswordField('Confirm New Password', validators=[
+        Optional(), EqualTo('new_password', message='Passwords must match.')
+    ])
+    submit = SubmitField('Save Changes')
+
+
 class ReservationForm(FlaskForm):
-    start_date = DateField('Start Date (Friday)', validators=[DataRequired()])
+    start_date = DateField('Start Date', validators=[DataRequired()])
     end_date = DateField('End Date', validators=[DataRequired()])
     notes = TextAreaField('Notes', validators=[Optional(), Length(max=500)])
     submit = SubmitField('Reserve Dates')

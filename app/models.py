@@ -108,13 +108,19 @@ class Season(db.Model):
 
     @property
     def lottery_start(self):
-        """First day of lottery-controlled months (May 1)."""
-        return date(self.year, 5, 1)
+        """First day of lottery-controlled period (April 1)."""
+        from flask import current_app
+        m = current_app.config.get('LOTTERY_START_MONTH', 4)
+        d = current_app.config.get('LOTTERY_START_DAY', 1)
+        return date(self.year, m, d)
 
     @property
     def lottery_end(self):
-        """Last day of lottery-controlled months (June 30)."""
-        return date(self.year, 6, 30)
+        """Last day of lottery-controlled period (August 7)."""
+        from flask import current_app
+        m = current_app.config.get('LOTTERY_END_MONTH', 8)
+        d = current_app.config.get('LOTTERY_END_DAY', 7)
+        return date(self.year, m, d)
 
     def __repr__(self):
         return f'<Season {self.year} [{self.phase}]>'

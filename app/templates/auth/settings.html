@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Account Settings — Silvies Club{% endblock %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 2rem auto;">
+    <div class="card">
+        <h1 class="card-title" style="font-size: 1.3rem;">Account Settings</h1>
+        <p class="text-muted text-small mb-2">Update your email, phone, or password. Enter your current password to confirm changes.</p>
+
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" value="{{ current_user.name }}" disabled
+                       style="background: var(--gray-100); cursor: not-allowed;">
+                <span class="text-small text-muted">Contact your admin to change your name.</span>
+            </div>
+            <div class="form-group">
+                {{ form.email.label }}
+                {{ form.email(placeholder="your@email.com") }}
+            </div>
+            <div class="form-group">
+                {{ form.phone.label }}
+                {{ form.phone(placeholder="(555) 123-4567") }}
+            </div>
+            <hr style="border: none; border-top: 1px solid var(--gray-200); margin: 1.25rem 0;">
+            <div class="form-group">
+                {{ form.new_password.label }}
+                {{ form.new_password(placeholder="Leave blank to keep current password") }}
+            </div>
+            <div class="form-group">
+                {{ form.confirm_password.label }}
+                {{ form.confirm_password(placeholder="Confirm new password") }}
+            </div>
+            <hr style="border: none; border-top: 1px solid var(--gray-200); margin: 1.25rem 0;">
+            <div class="form-group">
+                {{ form.current_password.label }}
+                {{ form.current_password(placeholder="Enter your current password to save") }}
+                <span class="text-small text-muted">Required to confirm any changes.</span>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -8,7 +8,7 @@
     <div class="card">
         <h2 class="card-title">Select Dates</h2>
         <p class="text-small text-muted mb-2">
-            Choose up to 7 days. Multi-day reservations during May–June must start on a Friday.
+            Choose up to 7 days within the season.
         </p>
 
         <form method="POST">
@@ -39,6 +39,9 @@
         {% for r in reservations %}
         <div class="text-small" style="padding: 0.3rem 0; border-bottom: 1px solid var(--gray-200);">
             <strong>{{ r.member_name }}</strong>: {{ r.start_date }} to {{ r.end_date }}
+            {% if r.notes %}
+            <br><span class="text-muted" style="font-size: 0.8rem; font-style: italic;">{{ r.notes }}</span>
+            {% endif %}
         </div>
         {% endfor %}
         {% endif %}
@@ -57,8 +60,28 @@
             '{{ season.season_end.isoformat() }}',
             {{ reservations | tojson }},
             false,
-            ''
+            '',
+            {{ calendar_config | tojson if calendar_config is defined else '{}' }}
         );
+
+        // When start date changes, set end date min and jump to same month
+        var startInput = document.getElementById('start_date');
+        var endInput = document.getElementById('end_date');
+        if (startInput && endInput) {
+            startInput.addEventListener('change', function() {
+                if (startInput.value) {
+                    endInput.min = startInput.value;
+                    // If end date is before start date or empty, set it to start date
+                    if (!endInput.value || endInput.value < startInput.value) {
+                        endInput.value = startInput.value;
+                    }
+                    // Focus the end date input to show its picker in the right month
+                    endInput.focus();
+                    // Browsers show the date picker at the current value's month,
+                    // so setting the value above handles the "jump" automatically
+                }
+            });
+        }
     });
 </script>
 {% endif %}

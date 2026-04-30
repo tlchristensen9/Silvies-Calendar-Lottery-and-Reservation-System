@@ -133,26 +133,50 @@ class PhaseEngine:
         db.session.commit()
 
     @staticmethod
-    def get_month_type(month):
-        """Return 'lottery', 'open', or 'hunting' for a given month number."""
-        lottery = current_app.config.get('LOTTERY_MONTHS', [5, 6])
-        hunting = current_app.config.get('HUNTING_SEASON_MONTHS', [8, 9, 10, 11])
-        if month in lottery:
+    def _is_lottery_date(d, season):
+        """Check if a single date falls within the lottery period."""
+        return season.lottery_start <= d <= season.lottery_end
+
+    @staticmethod
+    def _is_hunting_date(d, season):
+        """Check if a date falls in hunting season (after lottery end through Nov)."""
+        hunting_months = current_app.config.get('HUNTING_SEASON_MONTHS', [8, 9, 10, 11])
+        return d.month in hunting_months and d > season.lottery_end
+
+    @staticmethod
+    def _dates_overlap_lottery(start_date, end_date, season):
+        """Check if any date in range falls within the lottery period."""
+        return start_date <= season.lottery_end and end_date >= season.lottery_start
+
+    @staticmethod
+    def _dates_overlap_hunting(start_date, end_date, season):
+        """Check if any date in range falls in hunting season."""
+        d = start_date
+        while d <= end_date:
+            if PhaseEngine._is_hunting_date(d, season):
+                return True, d
+            d += timedelta(days=1)
+        return False, None
+
+    @staticmethod
+    def get_date_type(d, season):
+        """Return 'lottery', 'open', or 'hunting' for a given date."""
+        if PhaseEngine._is_lottery_date(d, season):
             return 'lottery'
-        if month in hunting:
+        if PhaseEngine._is_hunting_date(d, season):
             return 'hunting'
         return 'open'
 
     @staticmethod
     def can_member_reserve_open(member, season):
-        """Check if a member can book in open months (always yes for any member)."""
+        """Check if a member can book in open dates (always yes for any member)."""
         if not season:
             return False, 'No active season.'
         return True, 'Open booking - reserve anytime.'
 
     @staticmethod
     def can_member_reserve_lottery(member, season):
-        """Check if a member can reserve in lottery months (May-June), phase-dependent."""
+        """Check if a member can reserve in lottery dates, phase-dependent."""
         if not season:
             return False, 'No active season.'
         if season.phase == PhaseState.SETUP:
@@ -185,11 +209,10 @@ class PhaseEngine:
 
     @staticmethod
     def can_member_reserve(member, season):
-        """Combined check - open booking is always allowed, lottery depends on phase.
-        Returns True if the member can make ANY reservation (open or lottery)."""
+        """Combined check - open booking is always allowed, lottery depends on phase."""
         if not season:
             return False, 'No active season.'
-        return True, 'You can book open-month dates anytime. Lottery dates depend on current phase.'
+        return True, 'You can book open dates anytime. Lottery dates depend on current phase.'
 
     @staticmethod
     def get_reserved_dates(season):
@@ -199,16 +222,38 @@ class PhaseEngine:
                  'notes': r.notes, 'phase': r.phase_made} for r in reservations]
 
     @staticmethod
-    def get_month_config():
-        """Return month type config for the calendar UI."""
-        lottery = current_app.config.get('LOTTERY_MONTHS', [5, 6])
-        hunting = current_app.config.get('HUNTING_SEASON_MONTHS', [8, 9, 10, 11])
-        open_months = current_app.config.get('OPEN_BOOKING_MONTHS', [7, 12, 1, 2, 3, 4])
+    def get_calendar_config(season):
+        """Return date-based config for the calendar UI."""
         return {
-            'lottery_months': lottery,
-            'hunting_months': hunting,
-            'open_months': open_months,
+            'lottery_start': season.lottery_start.isoformat(),
+            'lottery_end': season.lottery_end.isoformat(),
+            'hunting_start': (season.lottery_end + timedelta(days=1)).isoformat(),
+            'hunting_end': date(season.year, 11, 30).isoformat(),
+            'season_start': season.season_start.isoformat(),
+            'season_end': season.season_end.isoformat(),
         }
+
+    @staticmethod
+    def _get_fri_thu_block_start(d):
+        """Given a date, return the Friday that starts its Fri-Thu block."""
+        day_of_week = d.weekday()  # 0=Mon..6=Sun
+        if day_of_week == 4:  # Friday
+            return d
+        elif day_of_week < 4:  # Mon-Thu: go back to previous Friday
+            return d - timedelta(days=(day_of_week + 3))
+        else:  # Sat-Sun: go back to previous Friday
+            return d - timedelta(days=(day_of_week - 4))
+
+    @staticmethod
+    def _get_fri_thu_block_end(d):
+        """Given a date, return the Thursday that ends its Fri-Thu block."""
+        day_of_week = d.weekday()
+        if day_of_week == 3:  # Thursday
+            return d
+        elif day_of_week < 3:  # Mon-Wed
+            return d + timedelta(days=(3 - day_of_week))
+        else:  # Fri-Sun
+            return d + timedelta(days=((3 - day_of_week) % 7))
 
     @staticmethod
     def validate_reservation(season, member, start_date, end_date):
@@ -220,23 +265,26 @@ class PhaseEngine:
             return False, f'Reservation cannot exceed {max_days} days.'
         if start_date < season.season_start or end_date > season.season_end:
             return False, 'Dates must be within the season.'
-        # Check that dates don't fall in hunting season months
-        hunting = current_app.config.get('HUNTING_SEASON_MONTHS', [8, 9, 10, 11])
-        d = start_date
-        while d <= end_date:
-            if d.month in hunting:
-                return False, f'{d.strftime("%B")} is hunting season - no reservations needed.'
-            d += timedelta(days=1)
-        # Check for lottery-month dates: enforce phase rules
-        lottery = current_app.config.get('LOTTERY_MONTHS', [5, 6])
-        has_lottery_dates = any(
-            (start_date + timedelta(days=i)).month in lottery
-            for i in range((end_date - start_date).days + 1)
-        )
+        # Check that dates don't fall in hunting season
+        hunting_hit, hunting_date = PhaseEngine._dates_overlap_hunting(start_date, end_date, season)
+        if hunting_hit:
+            return False, f'{hunting_date.strftime("%B %d")} is hunting season - no reservations needed.'
+        # Check for lottery dates: enforce phase rules
+        has_lottery_dates = PhaseEngine._dates_overlap_lottery(start_date, end_date, season)
         if has_lottery_dates:
             can, reason = PhaseEngine.can_member_reserve_lottery(member, season)
             if not can:
                 return False, reason
+            # Friday-Thursday block rule: Phase 1 and Phase 2 only
+            if season.phase in (PhaseState.PHASE1_DRAFT, PhaseState.PHASE2_FCFS):
+                block_start = PhaseEngine._get_fri_thu_block_start(start_date)
+                if start_date != block_start:
+                    return False, (f'Reservation must start on Friday '
+                                   f'({block_start.strftime("%B %d")}).')
+                block_end = PhaseEngine._get_fri_thu_block_end(start_date)
+                if end_date > block_end:
+                    return False, (f'Reservation must end by {block_end.strftime("%A, %B %d")} '
+                                   f'(the Thursday of this Fri-Thu block).')
         existing = Reservation.query.filter_by(season_id=season.id, is_cancelled=False).all()
         for r in existing:
             if r.start_date <= end_date and r.end_date >= start_date:
@@ -245,12 +293,7 @@ class PhaseEngine:
 
     @staticmethod
     def make_reservation(season, member, start_date, end_date, notes=None):
-        # Determine if this is an open-month booking or a lottery booking
-        lottery = current_app.config.get('LOTTERY_MONTHS', [5, 6])
-        has_lottery_dates = any(
-            (start_date + timedelta(days=i)).month in lottery
-            for i in range((end_date - start_date).days + 1)
-        )
+        has_lottery_dates = PhaseEngine._dates_overlap_lottery(start_date, end_date, season)
         if has_lottery_dates:
             phase_made = season.phase
         else:
@@ -260,7 +303,6 @@ class PhaseEngine:
                                   start_date=start_date, end_date=end_date,
                                   phase_made=phase_made, notes=notes)
         db.session.add(reservation)
-        # Only advance draft state for lottery-month picks
         if has_lottery_dates:
             if season.phase == PhaseState.PHASE1_DRAFT:
                 draft_entry = DraftOrder.query.filter_by(season_id=season.id, member_id=member.id).first()

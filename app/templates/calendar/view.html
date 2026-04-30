@@ -108,7 +108,7 @@
             {{ reservations | tojson }},
             {{ can_reserve | tojson }},
             '{{ url_for("calendar.reserve") }}',
-            {{ month_config | tojson }}
+            {{ calendar_config | tojson }}
         );
     });
 </script>

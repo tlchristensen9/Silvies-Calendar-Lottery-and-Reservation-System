@@ -1,0 +1,48 @@
+SILVIES CLUB RESERVATION SYSTEM — TODO LIST
+=============================================
+
+ALL ITEMS COMPLETED
+-------------------
+
+- [DONE] 1. FRIDAY-THURSDAY BLOCK RULE (Phase 1 & 2 only)
+  - Lottery reservations must start on Friday and end by the following Thursday
+  - Phase 3 (reverse draft): NO block rule
+  - Open FCFS and open booking months: NO block rule
+  - Implemented in PhaseEngine.validate_reservation() with _get_fri_thu_block_start/end helpers
+
+- [DONE] 2. EXPAND LOTTERY PERIOD (April 1 through August 7)
+  - Changed from month-based to date-based config (LOTTERY_START_MONTH/DAY, LOTTERY_END_MONTH/DAY)
+  - April and July are now lottery dates (no longer open booking)
+  - August 1-7 = lottery, August 8+ = hunting season
+  - Calendar JS updated to handle split months and date-range detection
+  - Open booking months: Dec, Jan, Feb, Mar
+
+- [DONE] 3. PASSWORD RECOVERY VIA EMAIL
+  - Flask-Mail configured with Gmail SMTP (silviesclubreservations@gmail.com)
+  - Token-based reset using itsdangerous URLSafeTimedSerializer (1 hour expiry)
+  - Routes: /forgot-password, /reset-password/<token>
+  - "Forgot your password?" link on login page
+  - Email enumeration protection (same message regardless of email match)
+
+- [DONE] 4. MEMBER SETTINGS / PROFILE PAGE
+  - Settings page at /settings with email, phone, and password fields
+  - Current password required to confirm any changes
+  - Email uniqueness validation
+  - Nav link updated from "Change Password" to "Settings"
+
+- [DONE] 5. ADMIN DELETE MEMBER
+  - Admin can delete members with confirmation dialog
+  - Cascades: deletes reservations and draft orders
+  - Prevents admin from deleting their own account
+
+- [DONE] 6. END DATE PICKER AUTO-JUMP
+  - End date picker auto-jumps to start date's month when start date is selected
+
+- [DONE] 7. RESERVATION NOTES IN MINI CALENDAR
+  - Notes display in mini calendar on reserve page and as tooltips on calendar view
+
+NOTES:
+- seed_members.py was deleted during cleanup. Current instance/silvies.db has all member data.
+- Local branch is now "master" (synced with GitHub main)
+- Remember to pip install Flask-Mail on PythonAnywhere after deployment
+- All changes tested: 36 tests passing (lottery period, block rule, password recovery, settings, admin delete, calendar config, open booking)

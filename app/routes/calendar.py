@@ -38,7 +38,7 @@ def view():
                            .order_by(DraftOrder.position)
                            .all())
 
-    month_config = PhaseEngine.get_month_config() if season else {}
+    calendar_config = PhaseEngine.get_calendar_config(season) if season else {}
 
     return render_template('calendar/view.html',
                            season=season,
@@ -46,7 +46,7 @@ def view():
                            can_reserve=can_reserve,
                            reserve_reason=reserve_reason,
                            draft_order=draft_order,
-                           month_config=month_config)
+                           calendar_config=calendar_config)
 
 
 @calendar_bp.route('/reserve', methods=['GET', 'POST'])
@@ -96,9 +96,12 @@ def reserve():
 
     existing_reservations = PhaseEngine.get_reserved_dates(season) if season else []
 
+    calendar_config = PhaseEngine.get_calendar_config(season) if season else {}
+
     return render_template('calendar/reserve.html',
                            form=form, season=season,
-                           reservations=existing_reservations)
+                           reservations=existing_reservations,
+                           calendar_config=calendar_config)
 
 
 @calendar_bp.route('/cancel/<int:reservation_id>', methods=['POST'])
@@ -163,7 +166,7 @@ def api_available_dates():
     season = PhaseEngine.get_active_season()
     if not season:
         return jsonify({'season_start': None, 'season_end': None,
-                        'reserved_dates': [], 'month_config': {}})
+                        'reserved_dates': [], 'calendar_config': {}})
 
     reservations = Reservation.query.filter_by(
         season_id=season.id, is_cancelled=False).all()
@@ -180,6 +183,6 @@ def api_available_dates():
         'season_start': season.season_start.isoformat(),
         'season_end': season.season_end.isoformat(),
         'reserved_dates': sorted(reserved),
-        'month_config': PhaseEngine.get_month_config(),
+        'calendar_config': PhaseEngine.get_calendar_config(season),
         'phase': season.phase,
     })

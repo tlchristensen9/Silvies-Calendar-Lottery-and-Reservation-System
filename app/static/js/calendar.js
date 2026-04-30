@@ -1,45 +1,67 @@
 /**
  * Calendar renderer for Silvies Club Reservation System.
- * Renders a full-year month-by-month grid with color-coded month types:
- *   - Lottery months (May-Jun): gold/amber - reservations controlled by draft phases
- *   - Open months (Jul, Dec-Apr): green - any member can book anytime
- *   - Hunting season (Aug-Nov): brown - cabin open, no reservation needed
+ * Renders a full-year month-by-month grid with color-coded date types:
+ *   - Lottery dates (Apr 1 - Aug 7): gold/amber - reservations controlled by draft phases
+ *   - Open dates (Dec-Mar): green - any member can book anytime
+ *   - Hunting season (Aug 8 - Nov 30): brown - cabin open, no reservation needed
+ * Date types are determined by date ranges, not whole months.
  */
 
-function renderCalendar(containerId, seasonStart, seasonEnd, reservations, canReserve, reserveUrl, monthConfig) {
-    const container = document.getElementById(containerId);
+function renderCalendar(containerId, seasonStart, seasonEnd, reservations, canReserve, reserveUrl, calConfig) {
+    var container = document.getElementById(containerId);
     if (!container) return;
 
-    const start = new Date(seasonStart + 'T00:00:00');
-    const end = new Date(seasonEnd + 'T00:00:00');
-    const today = new Date();
+    var start = new Date(seasonStart + 'T00:00:00');
+    var end = new Date(seasonEnd + 'T00:00:00');
+    var today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Month type lookups (months are 1-indexed in config, JS uses 0-indexed)
-    const lotteryMonths = new Set((monthConfig.lottery_months || [5, 6]));
-    const huntingMonths = new Set((monthConfig.hunting_months || [8, 9, 10, 11]));
-    const openMonths = new Set((monthConfig.open_months || [7, 12, 1, 2, 3, 4]));
+    // Date-based type detection
+    var lotteryStart = calConfig.lottery_start ? new Date(calConfig.lottery_start + 'T00:00:00') : new Date(start.getFullYear(), 3, 1);
+    var lotteryEnd = calConfig.lottery_end ? new Date(calConfig.lottery_end + 'T00:00:00') : new Date(start.getFullYear(), 7, 7);
+    var huntingStart = calConfig.hunting_start ? new Date(calConfig.hunting_start + 'T00:00:00') : new Date(start.getFullYear(), 7, 8);
+    var huntingEnd = calConfig.hunting_end ? new Date(calConfig.hunting_end + 'T00:00:00') : new Date(start.getFullYear(), 10, 30);
 
-    function getMonthType(month1Indexed) {
-        if (lotteryMonths.has(month1Indexed)) return 'lottery';
-        if (huntingMonths.has(month1Indexed)) return 'hunting';
+    function getDateType(d) {
+        if (d >= lotteryStart && d <= lotteryEnd) return 'lottery';
+        if (d >= huntingStart && d <= huntingEnd) return 'hunting';
         return 'open';
     }
 
-    // Build a map of reserved dates
-    const reservedMap = {};
-    reservations.forEach(r => {
-        const rStart = new Date(r.start_date + 'T00:00:00');
-        const rEnd = new Date(r.end_date + 'T00:00:00');
-        const d = new Date(rStart);
+    // Determine the predominant type for a month (for the month block styling)
+    function getMonthType(monthIdx) {
+        // Check first and 15th of month to determine predominant type
+        var first = new Date(start.getFullYear(), monthIdx, 1);
+        var mid = new Date(start.getFullYear(), monthIdx, 15);
+        var t1 = getDateType(first);
+        var t2 = getDateType(mid);
+        // If split month, use the type that covers more days
+        if (t1 === t2) return t1;
+        // For split months, check which type has more days
+        var lastDay = new Date(start.getFullYear(), monthIdx + 1, 0).getDate();
+        var counts = { lottery: 0, hunting: 0, open: 0 };
+        for (var dd = 1; dd <= lastDay; dd++) {
+            counts[getDateType(new Date(start.getFullYear(), monthIdx, dd))]++;
+        }
+        if (counts.lottery >= counts.hunting && counts.lottery >= counts.open) return 'lottery';
+        if (counts.hunting >= counts.open) return 'hunting';
+        return 'open';
+    }
+
+    // Build a map of reserved dates (stores name + notes)
+    var reservedMap = {};
+    reservations.forEach(function(r) {
+        var rStart = new Date(r.start_date + 'T00:00:00');
+        var rEnd = new Date(r.end_date + 'T00:00:00');
+        var d = new Date(rStart);
         while (d <= rEnd) {
-            const key = dateToKey(d);
-            reservedMap[key] = r.member_name;
+            var key = dateToKey(d);
+            reservedMap[key] = { name: r.member_name, notes: r.notes || '' };
             d.setDate(d.getDate() + 1);
         }
     });
 
-    const year = start.getFullYear();
+    var year = start.getFullYear();
 
     // Legend
     var html = '<div class="calendar-legend">';
@@ -51,20 +73,31 @@ function renderCalendar(containerId, seasonStart, seasonEnd, reservations, canRe
 
     // Render all 12 months
     for (var m = 0; m < 12; m++) {
-        var month1 = m + 1; // 1-indexed month
-        var monthType = getMonthType(month1);
+        var monthType = getMonthType(m);
         var monthDate = new Date(year, m, 1);
         var monthName = monthDate.toLocaleString('default', { month: 'long', year: 'numeric' });
 
+        // Check if this is a split month (has multiple date types)
+        var isSplit = false;
+        var daysInMonth = new Date(year, m + 1, 0).getDate();
+        var firstType = getDateType(new Date(year, m, 1));
+        for (var check = 2; check <= daysInMonth; check++) {
+            if (getDateType(new Date(year, m, check)) !== firstType) {
+                isSplit = true;
+                break;
+            }
+        }
+
         var typeLabel = '';
-        if (monthType === 'lottery') typeLabel = ' — Lottery';
+        if (isSplit) typeLabel = ' — Mixed';
+        else if (monthType === 'lottery') typeLabel = ' — Lottery';
         else if (monthType === 'hunting') typeLabel = ' — Hunting Season';
         else typeLabel = ' — Open Booking';
 
         html += '<div class="calendar-month-block month-' + monthType + '">';
         html += '<div class="calendar-month-title">' + monthName + '<span class="month-type-label">' + typeLabel + '</span></div>';
 
-        if (monthType === 'hunting') {
+        if (monthType === 'hunting' && !isSplit) {
             html += '<div class="hunting-notice">Cabin open — no reservation needed</div>';
         }
 
@@ -83,28 +116,42 @@ function renderCalendar(containerId, seasonStart, seasonEnd, reservations, canRe
         }
 
         // Days of the month
-        var daysInMonth = new Date(year, m + 1, 0).getDate();
         for (var d = 1; d <= daysInMonth; d++) {
             var thisDate = new Date(year, m, d);
             var key = dateToKey(thisDate);
             var inSeason = thisDate >= start && thisDate <= end;
-            var isReserved = reservedMap[key];
+            var resInfo = reservedMap[key];
+            var isReserved = !!resInfo;
             var isToday = thisDate.getTime() === today.getTime();
-            var isHunting = monthType === 'hunting';
+            var dateType = getDateType(thisDate);
+            var isHunting = dateType === 'hunting';
+            var isLottery = dateType === 'lottery';
 
             var classes = 'calendar-day';
             if (!inSeason) classes += ' outside';
             if (isReserved) classes += ' reserved';
             if (isToday) classes += ' today';
             if (isHunting) classes += ' hunting-day';
+            if (isLottery && !isReserved) classes += ' lottery-day';
             if (inSeason && !isReserved && !isHunting && canReserve) classes += ' available';
 
             var content = '<span class="day-num">' + d + '</span>';
             if (isReserved) {
-                content += '<span class="res-label">' + isReserved + '</span>';
+                content += '<span class="res-label">' + resInfo.name + '</span>';
+                if (resInfo.notes) {
+                    content += '<span class="res-notes">' + resInfo.notes + '</span>';
+                }
             }
 
-            // Click to start reservation (not for hunting months)
+            // Add tooltip with notes if present
+            var titleAttr = '';
+            if (isReserved && resInfo.notes) {
+                titleAttr = ' title="' + resInfo.name + ': ' + resInfo.notes.replace(/"/g, '&quot;') + '"';
+            } else if (isReserved) {
+                titleAttr = ' title="' + resInfo.name + '"';
+            }
+
+            // Click to start reservation (not for hunting days)
             var onClick = '';
             if (inSeason && !isReserved && !isHunting && canReserve && reserveUrl) {
                 var isoDate = key;
@@ -114,7 +161,7 @@ function renderCalendar(containerId, seasonStart, seasonEnd, reservations, canRe
                 onClick = ' onclick="window.location=\'' + reserveUrl + '?start=' + isoDate + '&end=' + dateToKey(maxEnd) + '\'"';
             }
 
-            html += '<div class="' + classes + '"' + onClick + '>' + content + '</div>';
+            html += '<div class="' + classes + '"' + titleAttr + onClick + '>' + content + '</div>';
         }
 
         html += '</div>'; // calendar-grid

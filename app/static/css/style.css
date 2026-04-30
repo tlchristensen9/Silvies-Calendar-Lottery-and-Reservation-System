@@ -244,6 +244,16 @@ tr:hover { background: var(--gray-100); }
     font-weight: 600;
     font-size: 0.85rem;
 }
+.calendar-day .res-notes {
+    font-size: 0.6rem;
+    color: var(--gray-500);
+    display: block;
+    margin-top: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-style: italic;
+}
 .calendar-day.today { border-color: var(--blue); border-width: 2px; }
 .calendar-day.selected { background: var(--green-bg); border-color: var(--green-mid); border-width: 2px; }
 
@@ -281,6 +291,9 @@ tr:hover { background: var(--gray-100); }
     background: #f5ebe0;
     color: var(--brown-mid);
     cursor: default;
+}
+.calendar-day.lottery-day {
+    background: #fffdf5;
 }
 
 /* Calendar legend (JS-rendered) */
