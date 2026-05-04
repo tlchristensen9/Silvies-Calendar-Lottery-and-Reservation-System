@@ -72,6 +72,9 @@ class Season(db.Model):
     phase2_start = db.Column(db.Date, nullable=True)
     phase3_start = db.Column(db.Date, nullable=True)
     open_fcfs_start = db.Column(db.Date, nullable=True)
+    # Admin-overridable pick deadline durations (hours)
+    phase1_pick_hours = db.Column(db.Integer, nullable=True)   # None = use config default
+    phase3_pick_hours = db.Column(db.Integer, nullable=True)   # None = use config default
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     draft_orders = db.relationship('DraftOrder', backref='season', lazy='dynamic', cascade='all, delete-orphan')
     reservations = db.relationship('Reservation', backref='season', lazy='dynamic', cascade='all, delete-orphan')
@@ -174,3 +177,38 @@ class Reservation(db.Model):
 
     def __repr__(self):
         return f'<Reservation {self.start_date} to {self.end_date} by Member {self.member_id}>'
+
+
+class AppSetting(db.Model):
+    """Global application settings (key-value store)."""
+    __tablename__ = 'app_settings'
+    key = db.Column(db.String(50), primary_key=True)
+    value = db.Column(db.Text, nullable=True)
+
+    @staticmethod
+    def get(key, default=None):
+        """Retrieve a setting value by key."""
+        row = db.session.get(AppSetting, key)
+        return row.value if row else default
+
+    @staticmethod
+    def set(key, value):
+        """Set a setting value by key."""
+        row = db.session.get(AppSetting, key)
+        if row:
+            row.value = value
+        else:
+            row = AppSetting(key=key, value=value)
+            db.session.add(row)
+        db.session.commit()
+
+    @staticmethod
+    def delete(key):
+        """Delete a setting by key."""
+        row = db.session.get(AppSetting, key)
+        if row:
+            db.session.delete(row)
+            db.session.commit()
+
+    def __repr__(self):
+        return f'<AppSetting {self.key}={self.value}>'

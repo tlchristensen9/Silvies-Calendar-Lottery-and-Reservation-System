@@ -40,3 +40,6 @@ class Config:
 
     # Password reset token expiry (seconds)
     RESET_TOKEN_EXPIRY = 3600  # 1 hour
+
+    # Debug: time travel controls (set True to enable admin time override)
+    DEBUG_TIME_TRAVEL = os.environ.get('DEBUG_TIME_TRAVEL', 'true').lower() == 'true'

@@ -1,14 +1,16 @@
 """Admin (Spike) routes: member management, phase control, draft draw."""
 
+from datetime import datetime, timedelta
 from functools import wraps
 from flask import (Blueprint, render_template, redirect, url_for,
-                   flash, request, abort)
+                   flash, request, abort, current_app)
 from flask_login import login_required, current_user
 from app import db
 from app.models import (Member, Season, DraftOrder, Reservation,
-                        PhaseState, MemberRole)
+                        PhaseState, MemberRole, AppSetting)
 from app.forms import MemberForm, SeasonForm
 from app.phase_engine import PhaseEngine
+from app.utils import get_now, get_today
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -43,9 +45,13 @@ def dashboard():
                        .all())
         opt_in_count = DraftOrder.query.filter_by(season_id=season.id).count()
 
+    time_override_active = bool(AppSetting.get('time_override')) if current_app.config.get('DEBUG_TIME_TRAVEL') else False
+
     return render_template('admin/dashboard.html',
                            season=season, members=members, seasons=seasons,
-                           draft_order=draft_order, opt_in_count=opt_in_count)
+                           draft_order=draft_order, opt_in_count=opt_in_count,
+                           time_override_active=time_override_active,
+                           app_time=get_now())
 
 
 # --- Member Management ---
@@ -282,3 +288,142 @@ def admin_cancel_reservation(res_id):
     PhaseEngine.cancel_reservation(reservation)
     flash('Reservation cancelled.', 'info')
     return redirect(url_for('admin.dashboard'))
+
+
+# --- Admin Tools: Time Travel, Deadlines, Reset ---
+
+@admin_bp.route('/tools')
+@admin_required
+def admin_tools():
+    """Admin tools page: time travel, deadline config, season reset."""
+    season = PhaseEngine.get_active_season()
+    time_travel_enabled = current_app.config.get('DEBUG_TIME_TRAVEL', False)
+    current_override = None
+    if time_travel_enabled:
+        current_override = AppSetting.get('time_override')
+    return render_template('admin/tools.html',
+                           season=season,
+                           time_travel_enabled=time_travel_enabled,
+                           current_override=current_override,
+                           now=get_now(),
+                           today=get_today())
+
+
+@admin_bp.route('/tools/time-set', methods=['POST'])
+@admin_required
+def time_set():
+    """Set a fake date/time override."""
+    if not current_app.config.get('DEBUG_TIME_TRAVEL', False):
+        flash('Time travel is disabled.', 'danger')
+        return redirect(url_for('admin.admin_tools'))
+
+    date_str = request.form.get('override_date', '')
+    time_str = request.form.get('override_time', '12:00')
+    if not date_str:
+        flash('Please enter a date.', 'danger')
+        return redirect(url_for('admin.admin_tools'))
+
+    try:
+        dt = datetime.fromisoformat(f'{date_str}T{time_str}:00')
+        AppSetting.set('time_override', dt.isoformat())
+        flash(f'Time override set to {dt.strftime("%b %d, %Y at %I:%M %p")}.', 'success')
+    except ValueError:
+        flash('Invalid date/time format.', 'danger')
+
+    return redirect(url_for('admin.admin_tools'))
+
+
+@admin_bp.route('/tools/time-jump', methods=['POST'])
+@admin_required
+def time_jump():
+    """Jump the fake clock forward by a number of hours."""
+    if not current_app.config.get('DEBUG_TIME_TRAVEL', False):
+        flash('Time travel is disabled.', 'danger')
+        return redirect(url_for('admin.admin_tools'))
+
+    hours = request.form.get('jump_hours', 0, type=int)
+    if hours <= 0:
+        flash('Enter a positive number of hours.', 'danger')
+        return redirect(url_for('admin.admin_tools'))
+
+    current = get_now()
+    new_time = current + timedelta(hours=hours)
+    AppSetting.set('time_override', new_time.isoformat())
+    flash(f'Jumped {hours} hours forward to {new_time.strftime("%b %d, %Y at %I:%M %p")}.', 'success')
+
+    # After jumping, check for expired deadlines
+    season = PhaseEngine.get_active_season()
+    if season:
+        skipped = PhaseEngine.check_and_advance_deadlines(season)
+        if skipped:
+            flash(f'{skipped} pick deadline(s) expired and were auto-skipped.', 'info')
+
+    return redirect(url_for('admin.admin_tools'))
+
+
+@admin_bp.route('/tools/time-clear', methods=['POST'])
+@admin_required
+def time_clear():
+    """Clear the time override, return to real time."""
+    AppSetting.delete('time_override')
+    flash('Time override cleared. Using real system time.', 'info')
+    return redirect(url_for('admin.admin_tools'))
+
+
+@admin_bp.route('/tools/deadlines', methods=['POST'])
+@admin_required
+def update_deadlines():
+    """Update pick deadline durations for the active season."""
+    season = PhaseEngine.get_active_season()
+    if not season:
+        flash('No active season.', 'danger')
+        return redirect(url_for('admin.admin_tools'))
+
+    p1_hours = request.form.get('phase1_pick_hours', '', type=str).strip()
+    p3_hours = request.form.get('phase3_pick_hours', '', type=str).strip()
+
+    season.phase1_pick_hours = int(p1_hours) if p1_hours else None
+    season.phase3_pick_hours = int(p3_hours) if p3_hours else None
+    db.session.commit()
+
+    if season.phase1_pick_hours or season.phase3_pick_hours:
+        msg = 'Pick deadlines updated: '
+        parts = []
+        if season.phase1_pick_hours:
+            parts.append(f'Phase 1 = {season.phase1_pick_hours}h')
+        if season.phase3_pick_hours:
+            parts.append(f'Phase 3 = {season.phase3_pick_hours}h')
+        flash(msg + ', '.join(parts) + '.', 'success')
+    else:
+        flash('Pick deadlines reset to config defaults.', 'info')
+
+    return redirect(url_for('admin.admin_tools'))
+
+
+@admin_bp.route('/season/<int:season_id>/reset', methods=['POST'])
+@admin_required
+def reset_season(season_id):
+    """Reset a season: wipe reservations, draft orders, reset to SETUP.
+    Requires typing the 4-digit year as confirmation."""
+    season = Season.query.get_or_404(season_id)
+    confirm_year = request.form.get('confirm_year', '').strip()
+
+    if confirm_year != str(season.year):
+        flash(f'Reset cancelled — you must type "{season.year}" to confirm.', 'danger')
+        return redirect(url_for('admin.admin_tools'))
+
+    # Wipe all reservations for this season
+    Reservation.query.filter_by(season_id=season.id).delete()
+    # Wipe all draft orders for this season
+    DraftOrder.query.filter_by(season_id=season.id).delete()
+    # Reset phase and all phase dates
+    season.phase = PhaseState.SETUP
+    season.phase1_optin_start = None
+    season.phase1_draft_date = None
+    season.phase2_start = None
+    season.phase3_start = None
+    season.open_fcfs_start = None
+    db.session.commit()
+
+    flash(f'Season {season.year} has been fully reset to Setup phase.', 'success')
+    return redirect(url_for('admin.admin_tools'))

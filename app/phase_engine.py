@@ -3,6 +3,7 @@ from datetime import datetime, date, timedelta
 from flask import current_app
 from app import db
 from app.models import (Season, DraftOrder, Reservation, Member, PhaseState, MemberRole)
+from app.utils import get_now, get_today
 
 
 class PhaseEngine:
@@ -16,7 +17,7 @@ class PhaseEngine:
         if season.phase not in (PhaseState.PHASE1_DRAFT, PhaseState.PHASE3_REVERSE):
             return 0
         skipped = 0
-        now = datetime.utcnow()
+        now = get_now()
         if season.phase == PhaseState.PHASE1_DRAFT:
             overdue = (DraftOrder.query
                        .filter_by(season_id=season.id, phase1_picked=False)
@@ -47,13 +48,13 @@ class PhaseEngine:
             remaining = DraftOrder.query.filter_by(season_id=season.id, phase1_picked=False).count()
             if remaining == 0:
                 season.phase = PhaseState.PHASE2_FCFS
-                season.phase2_start = date.today()
+                season.phase2_start = get_today()
                 db.session.commit()
         elif season.phase == PhaseState.PHASE3_REVERSE:
             remaining = DraftOrder.query.filter_by(season_id=season.id, phase3_picked=False).count()
             if remaining == 0:
                 season.phase = PhaseState.OPEN_FCFS
-                season.open_fcfs_start = date.today()
+                season.open_fcfs_start = get_today()
                 db.session.commit()
 
     @staticmethod
@@ -62,12 +63,19 @@ class PhaseEngine:
         if not current:
             return
         if season.phase == PhaseState.PHASE1_DRAFT and not current.phase1_pick_deadline:
-            days = current_app.config.get('PHASE1_PICK_DAYS', 5)
-            current.phase1_pick_deadline = datetime.utcnow() + timedelta(days=days)
+            # Season-level override (hours) takes priority, else config default (days)
+            if season.phase1_pick_hours:
+                current.phase1_pick_deadline = get_now() + timedelta(hours=season.phase1_pick_hours)
+            else:
+                days = current_app.config.get('PHASE1_PICK_DAYS', 5)
+                current.phase1_pick_deadline = get_now() + timedelta(days=days)
             db.session.commit()
         elif season.phase == PhaseState.PHASE3_REVERSE and not current.phase3_pick_deadline:
-            days = current_app.config.get('PHASE3_PICK_DAYS', 3)
-            current.phase3_pick_deadline = datetime.utcnow() + timedelta(days=days)
+            if season.phase3_pick_hours:
+                current.phase3_pick_deadline = get_now() + timedelta(hours=season.phase3_pick_hours)
+            else:
+                days = current_app.config.get('PHASE3_PICK_DAYS', 3)
+                current.phase3_pick_deadline = get_now() + timedelta(days=days)
             db.session.commit()
 
     @staticmethod
@@ -75,7 +83,7 @@ class PhaseEngine:
         if season.phase != PhaseState.SETUP:
             raise ValueError(f'Cannot start opt-in from phase: {season.phase}')
         season.phase = PhaseState.PHASE1_OPTIN
-        season.phase1_optin_start = date.today()
+        season.phase1_optin_start = get_today()
         db.session.commit()
 
     @staticmethod
@@ -92,7 +100,7 @@ class PhaseEngine:
                 {'pos': i, 'eid': entry.id}
             )
         season.phase = PhaseState.PHASE1_DRAFT
-        season.phase1_draft_date = date.today()
+        season.phase1_draft_date = get_today()
         db.session.commit()
         for entry in entries:
             db.session.refresh(entry)
@@ -103,7 +111,7 @@ class PhaseEngine:
         if season.phase != PhaseState.PHASE1_DRAFT:
             raise ValueError(f'Cannot advance to Phase 2 from: {season.phase}')
         season.phase = PhaseState.PHASE2_FCFS
-        season.phase2_start = date.today()
+        season.phase2_start = get_today()
         db.session.commit()
 
     @staticmethod
@@ -115,7 +123,7 @@ class PhaseEngine:
             entry.phase3_picked = False
             entry.phase3_pick_deadline = None
         season.phase = PhaseState.PHASE3_REVERSE
-        season.phase3_start = date.today()
+        season.phase3_start = get_today()
         db.session.commit()
         PhaseEngine._ensure_current_pick_has_deadline(season)
 
@@ -124,7 +132,7 @@ class PhaseEngine:
         if season.phase not in (PhaseState.PHASE3_REVERSE, PhaseState.PHASE2_FCFS):
             raise ValueError(f'Cannot advance to open FCFS from: {season.phase}')
         season.phase = PhaseState.OPEN_FCFS
-        season.open_fcfs_start = date.today()
+        season.open_fcfs_start = get_today()
         db.session.commit()
 
     @staticmethod
@@ -321,7 +329,7 @@ class PhaseEngine:
     @staticmethod
     def cancel_reservation(reservation):
         reservation.is_cancelled = True
-        reservation.cancelled_at = datetime.utcnow()
+        reservation.cancelled_at = get_now()
         db.session.commit()
 
     @staticmethod

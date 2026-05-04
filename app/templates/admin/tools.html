@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Admin Tools — Silvies Club{% endblock %}
+
+{% block content %}
+<h1 style="font-size: 1.5rem; margin-bottom: 1rem;">Admin Tools</h1>
+
+<a href="{{ url_for('admin.dashboard') }}" style="display: inline-block; margin-bottom: 1rem; color: var(--green-dark);">← Back to Dashboard</a>
+
+<!-- Time Travel -->
+{% if time_travel_enabled %}
+<div class="card" style="border-left: 4px solid var(--amber);">
+    <h2 class="card-title" style="color: var(--amber);">⏰ Time Travel (Debug)</h2>
+    <p class="text-small text-muted mb-1">
+        Override the system clock for testing. Affects deadlines, phase transitions, and all date logic.
+    </p>
+
+    <!-- Current time display -->
+    <div style="background: var(--gray-100); padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <span class="text-small text-muted">App time:</span>
+                <strong>{{ now.strftime('%b %d, %Y at %I:%M %p') }}</strong>
+                {% if current_override %}
+                <span style="background: var(--amber); color: white; padding: 0.15rem 0.5rem; border-radius: 3px; font-size: 0.75rem; margin-left: 0.5rem;">OVERRIDDEN</span>
+                {% else %}
+                <span class="text-small text-muted" style="margin-left: 0.5rem;">(real time)</span>
+                {% endif %}
+            </div>
+            {% if current_override %}
+            <form method="POST" action="{{ url_for('admin.time_clear') }}" style="display: inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-secondary">Reset to Real Time</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Set specific time -->
+    <form method="POST" action="{{ url_for('admin.time_set') }}" style="margin-bottom: 1rem;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div style="display: flex; gap: 0.5rem; align-items: end; flex-wrap: wrap;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="text-small">Date</label>
+                <input type="date" name="override_date" value="{{ today.isoformat() }}" style="width: auto;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="text-small">Time</label>
+                <input type="time" name="override_time" value="{{ now.strftime('%H:%M') }}" style="width: auto;">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Set Time</button>
+        </div>
+    </form>
+
+    <!-- Quick jump buttons -->
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        {% for hours, label in [(1, '1 hour'), (6, '6 hours'), (24, '1 day'), (72, '3 days'), (168, '1 week')] %}
+        <form method="POST" action="{{ url_for('admin.time_jump') }}" style="display: inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="jump_hours" value="{{ hours }}">
+            <button type="submit" class="btn btn-sm btn-secondary">+{{ label }}</button>
+        </form>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <h2 class="card-title">Time Travel</h2>
+    <p class="text-muted">Time travel is disabled. Set <code>DEBUG_TIME_TRAVEL=true</code> to enable.</p>
+</div>
+{% endif %}
+
+<!-- Pick Deadline Configuration -->
+<div class="card mt-1">
+    <h2 class="card-title">Pick Deadline Duration</h2>
+    {% if season %}
+    <p class="text-small text-muted mb-1">
+        Override how long each member gets to make their pick. Leave blank to use config defaults
+        (Phase 1: {{ config.PHASE1_PICK_DAYS }} days, Phase 3: {{ config.PHASE3_PICK_DAYS }} days).
+        <strong>Overrides are in hours</strong> for faster testing.
+    </p>
+    <form method="POST" action="{{ url_for('admin.update_deadlines') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div style="display: flex; gap: 1rem; align-items: end; flex-wrap: wrap;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="text-small">Phase 1 pick time (hours)</label>
+                <input type="number" name="phase1_pick_hours" min="1" max="720"
+                       value="{{ season.phase1_pick_hours or '' }}"
+                       placeholder="default: {{ config.PHASE1_PICK_DAYS * 24 }}h"
+                       style="width: 160px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="text-small">Phase 3 pick time (hours)</label>
+                <input type="number" name="phase3_pick_hours" min="1" max="720"
+                       value="{{ season.phase3_pick_hours or '' }}"
+                       placeholder="default: {{ config.PHASE3_PICK_DAYS * 24 }}h"
+                       style="width: 160px;">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Update Deadlines</button>
+        </div>
+    </form>
+    {% else %}
+    <p class="text-muted">No active season. Create a season first.</p>
+    {% endif %}
+</div>
+
+<!-- Reset Season -->
+<div class="card mt-1" style="border-left: 4px solid var(--red);">
+    <h2 class="card-title" style="color: var(--red);">Reset Season</h2>
+    {% if season %}
+    <p class="text-small text-muted mb-1">
+        This will permanently delete <strong>all reservations</strong> and <strong>all draft orders</strong>
+        for the {{ season.year }} season and reset it back to the Setup phase. This cannot be undone.
+    </p>
+    <form method="POST" action="{{ url_for('admin.reset_season', season_id=season.id) }}" id="reset-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div style="display: flex; gap: 0.75rem; align-items: end; flex-wrap: wrap;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="text-small">Type <strong>{{ season.year }}</strong> to confirm</label>
+                <input type="text" name="confirm_year" id="confirm-year" placeholder="{{ season.year }}"
+                       autocomplete="off" style="width: 120px;">
+            </div>
+            <button type="submit" class="btn btn-sm" id="reset-btn"
+                    style="background: var(--gray-300); color: var(--gray-500); cursor: not-allowed;"
+                    disabled>Reset Season</button>
+        </div>
+    </form>
+    {% else %}
+    <p class="text-muted">No active season to reset.</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if season %}
+<script>
+(function() {
+    var input = document.getElementById('confirm-year');
+    var btn = document.getElementById('reset-btn');
+    var target = '{{ season.year }}';
+
+    input.addEventListener('input', function() {
+        if (this.value.trim() === target) {
+            btn.disabled = false;
+            btn.style.background = 'var(--red)';
+            btn.style.color = 'white';
+            btn.style.cursor = 'pointer';
+        } else {
+            btn.disabled = true;
+            btn.style.background = 'var(--gray-300)';
+            btn.style.color = 'var(--gray-500)';
+            btn.style.cursor = 'not-allowed';
+        }
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}
