@@ -29,7 +29,6 @@ class TestConfig:
     MAIL_PASSWORD = None
     MAIL_DEFAULT_SENDER = 'test@test.com'
     RESET_TOKEN_EXPIRY = 3600
-    DEBUG_TIME_TRAVEL = False
 
 
 def make_app():

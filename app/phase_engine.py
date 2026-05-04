@@ -246,6 +246,7 @@ class PhaseEngine:
         reservations = Reservation.query.filter_by(season_id=season.id, is_cancelled=False).all()
         return [{'id': r.id, 'member_id': r.member_id, 'member_name': r.member.name,
                  'start_date': r.start_date.isoformat(), 'end_date': r.end_date.isoformat(),
+                 'is_blocked': r.is_blocked, 'block_label': r.block_label,
                  'notes': r.notes, 'phase': r.phase_made} for r in reservations]
 
     @staticmethod
@@ -315,6 +316,8 @@ class PhaseEngine:
         existing = Reservation.query.filter_by(season_id=season.id, is_cancelled=False).all()
         for r in existing:
             if r.start_date <= end_date and r.end_date >= start_date:
+                if r.is_blocked:
+                    return False, f'Dates overlap with blocked period: {r.block_label or "Blocked"}.'
                 return False, f'Dates overlap with {r.member.name}.'
         return True, None
 

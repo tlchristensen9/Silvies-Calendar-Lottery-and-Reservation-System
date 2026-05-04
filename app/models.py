@@ -161,6 +161,8 @@ class Reservation(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     cancelled_at = db.Column(db.DateTime, nullable=True)
     is_cancelled = db.Column(db.Boolean, default=False)
+    is_blocked = db.Column(db.Boolean, default=False)
+    block_label = db.Column(db.String(100), nullable=True)
 
     @property
     def num_days(self):

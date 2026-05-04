@@ -80,3 +80,14 @@ class SeasonForm(FlaskForm):
     phase2_start = DateField('Phase 2 Start (e.g., Jan 1)', validators=[Optional()])
     phase3_start = DateField('Phase 3 Start (e.g., Feb 1)', validators=[Optional()])
     submit = SubmitField('Create Season')
+
+
+class AdminReservationForm(FlaskForm):
+    member_id = SelectField('Member', coerce=int, validators=[DataRequired()])
+    start_date = DateField('Start Date', validators=[DataRequired()])
+    end_date = DateField('End Date', validators=[DataRequired()])
+    notes = TextAreaField('Notes', validators=[Optional(), Length(max=500)])
+    is_blocked = BooleanField('Block Dates (e.g., Annual Meeting)')
+    block_label = StringField('Block Label', validators=[Optional(), Length(max=100)],
+                              description='e.g., "Annual Meeting" — shown on calendar')
+    submit = SubmitField('Create Reservation')

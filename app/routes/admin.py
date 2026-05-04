@@ -10,7 +10,6 @@ from app.models import (Member, Season, DraftOrder, Reservation,
                         PhaseState, MemberRole, AppSetting)
 from app.forms import MemberForm, SeasonForm
 from app.phase_engine import PhaseEngine
-from app.utils import get_now, get_today
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -45,13 +44,11 @@ def dashboard():
                        .all())
         opt_in_count = DraftOrder.query.filter_by(season_id=season.id).count()
 
-    time_override_active = bool(AppSetting.get('time_override')) if current_app.config.get('DEBUG_TIME_TRAVEL') else False
 
     return render_template('admin/dashboard.html',
                            season=season, members=members, seasons=seasons,
                            draft_order=draft_order, opt_in_count=opt_in_count,
-                           time_override_active=time_override_active,
-                           app_time=get_now())
+)
 
 
 # --- Member Management ---
@@ -296,79 +293,9 @@ def admin_cancel_reservation(res_id):
 @admin_bp.route('/tools')
 @admin_required
 def admin_tools():
-    """Admin tools page: time travel, deadline config, season reset."""
+    """Admin tools page: deadline config, season reset."""
     season = PhaseEngine.get_active_season()
-    time_travel_enabled = current_app.config.get('DEBUG_TIME_TRAVEL', False)
-    current_override = None
-    if time_travel_enabled:
-        current_override = AppSetting.get('time_override')
-    return render_template('admin/tools.html',
-                           season=season,
-                           time_travel_enabled=time_travel_enabled,
-                           current_override=current_override,
-                           now=get_now(),
-                           today=get_today())
-
-
-@admin_bp.route('/tools/time-set', methods=['POST'])
-@admin_required
-def time_set():
-    """Set a fake date/time override."""
-    if not current_app.config.get('DEBUG_TIME_TRAVEL', False):
-        flash('Time travel is disabled.', 'danger')
-        return redirect(url_for('admin.admin_tools'))
-
-    date_str = request.form.get('override_date', '')
-    time_str = request.form.get('override_time', '12:00')
-    if not date_str:
-        flash('Please enter a date.', 'danger')
-        return redirect(url_for('admin.admin_tools'))
-
-    try:
-        dt = datetime.fromisoformat(f'{date_str}T{time_str}:00')
-        AppSetting.set('time_override', dt.isoformat())
-        flash(f'Time override set to {dt.strftime("%b %d, %Y at %I:%M %p")}.', 'success')
-    except ValueError:
-        flash('Invalid date/time format.', 'danger')
-
-    return redirect(url_for('admin.admin_tools'))
-
-
-@admin_bp.route('/tools/time-jump', methods=['POST'])
-@admin_required
-def time_jump():
-    """Jump the fake clock forward by a number of hours."""
-    if not current_app.config.get('DEBUG_TIME_TRAVEL', False):
-        flash('Time travel is disabled.', 'danger')
-        return redirect(url_for('admin.admin_tools'))
-
-    hours = request.form.get('jump_hours', 0, type=int)
-    if hours <= 0:
-        flash('Enter a positive number of hours.', 'danger')
-        return redirect(url_for('admin.admin_tools'))
-
-    current = get_now()
-    new_time = current + timedelta(hours=hours)
-    AppSetting.set('time_override', new_time.isoformat())
-    flash(f'Jumped {hours} hours forward to {new_time.strftime("%b %d, %Y at %I:%M %p")}.', 'success')
-
-    # After jumping, check for expired deadlines
-    season = PhaseEngine.get_active_season()
-    if season:
-        skipped = PhaseEngine.check_and_advance_deadlines(season)
-        if skipped:
-            flash(f'{skipped} pick deadline(s) expired and were auto-skipped.', 'info')
-
-    return redirect(url_for('admin.admin_tools'))
-
-
-@admin_bp.route('/tools/time-clear', methods=['POST'])
-@admin_required
-def time_clear():
-    """Clear the time override, return to real time."""
-    AppSetting.delete('time_override')
-    flash('Time override cleared. Using real system time.', 'info')
-    return redirect(url_for('admin.admin_tools'))
+    return render_template('admin/tools.html', season=season)
 
 
 @admin_bp.route('/tools/deadlines', methods=['POST'])
@@ -428,3 +355,64 @@ def reset_season(season_id):
 
     flash(f'Season {season.year} has been fully reset to Setup phase.', 'success')
     return redirect(url_for('admin.admin_tools'))
+
+
+# --- Admin Override Reservation & Block Dates ---
+
+@admin_bp.route('/reserve', methods=['GET', 'POST'])
+@admin_required
+def admin_reserve():
+    """Admin creates a reservation for any member, bypassing all phase rules.
+    Can also block dates (e.g., for annual meeting)."""
+    from app.forms import AdminReservationForm
+    season = PhaseEngine.get_active_season()
+    if not season:
+        flash('No active season.', 'warning')
+        return redirect(url_for('admin.dashboard'))
+
+    form = AdminReservationForm()
+    # Populate member choices
+    members_list = Member.query.order_by(Member.name).all()
+    form.member_id.choices = [(m.id, m.name) for m in members_list]
+
+    if form.validate_on_submit():
+        start = form.start_date.data
+        end = form.end_date.data
+
+        if start > end:
+            flash('Start date must be before end date.', 'danger')
+        else:
+            # Check for date overlap (admin can override most rules, but not double-booking)
+            existing = Reservation.query.filter_by(
+                season_id=season.id, is_cancelled=False).all()
+            overlap = False
+            for r in existing:
+                if r.start_date <= end and r.end_date >= start:
+                    overlap = True
+                    flash(f'Dates overlap with existing reservation by {r.member.name} '
+                          f'({r.start_date} to {r.end_date}).', 'danger')
+                    break
+
+            if not overlap:
+                is_blocked = form.is_blocked.data
+                block_label = form.block_label.data.strip() if form.is_blocked.data and form.block_label.data else None
+                reservation = Reservation(
+                    season_id=season.id,
+                    member_id=form.member_id.data,
+                    start_date=start,
+                    end_date=end,
+                    phase_made='admin_override',
+                    notes=form.notes.data,
+                    is_blocked=is_blocked,
+                    block_label=block_label or ('Annual Meeting' if is_blocked else None)
+                )
+                db.session.add(reservation)
+                db.session.commit()
+                if is_blocked:
+                    flash(f'Dates {start} to {end} blocked: {reservation.block_label}.', 'success')
+                else:
+                    member = Member.query.get(form.member_id.data)
+                    flash(f'Reservation created for {member.name}: {start} to {end}.', 'success')
+                return redirect(url_for('calendar.view'))
+
+    return render_template('admin/admin_reserve.html', form=form, season=season)

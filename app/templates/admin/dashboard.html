@@ -4,13 +4,6 @@
 {% block content %}
 <h1 style="font-size: 1.5rem; margin-bottom: 1rem;">Spike Dashboard</h1>
 
-{% if config.DEBUG_TIME_TRAVEL and time_override_active %}
-<div style="background: #fef3c7; border: 1px solid var(--amber); padding: 0.5rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.85rem;">
-    ⏰ <strong>Time Override Active:</strong> {{ app_time.strftime('%b %d, %Y at %I:%M %p') }}
-    <a href="{{ url_for('admin.admin_tools') }}" style="margin-left: 0.5rem; color: var(--green-dark);">Manage →</a>
-</div>
-{% endif %}
-
 <!-- Season Status & Controls -->
 <div class="card">
     <div class="flex-between mb-1">
@@ -163,6 +156,7 @@
     <div class="card">
         <h2 class="card-title">Calendar</h2>
         <p class="text-small text-muted mb-1">View and manage all reservations</p>
+        <a href="{{ url_for('admin.admin_reserve') }}" class="btn btn-primary btn-sm" style="margin-left: 0.5rem;">Admin Reserve / Block</a>
         <a href="{{ url_for('calendar.view') }}" class="btn btn-secondary">View Calendar</a>
         {% if not season %}
         <a href="{{ url_for('admin.create_season') }}" class="btn btn-primary btn-sm" style="margin-left: 0.5rem;">New Season</a>
@@ -175,7 +169,7 @@
     <div class="flex-between">
         <div>
             <h2 class="card-title">Admin Tools</h2>
-            <p class="text-small text-muted">Time travel, deadline overrides, season reset</p>
+            <p class="text-small text-muted">Deadline overrides, season reset</p>
         </div>
         <a href="{{ url_for('admin.admin_tools') }}" class="btn btn-secondary">Open Tools</a>
     </div>

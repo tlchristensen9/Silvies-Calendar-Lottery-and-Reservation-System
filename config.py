@@ -19,7 +19,7 @@ class Config:
     LOTTERY_START_DAY = 1         # April 1
     LOTTERY_END_MONTH = 8         # August
     LOTTERY_END_DAY = 7           # August 7
-    HUNTING_SEASON_MONTHS = [8, 9, 10, 11]  # Aug–Nov — cabin open, no reservations needed
+    HUNTING_SEASON_MONTHS = [8, 9, 10, 11]  # Aug-Nov — cabin open, no reservations needed
     # Note: Hunting season starts Aug 8 (after lottery ends Aug 7)
     # Open booking months: Dec, Jan, Feb, Mar (and Aug 8+ is hunting, not bookable)
     MAX_RESERVATION_DAYS = 7
@@ -41,5 +41,3 @@ class Config:
     # Password reset token expiry (seconds)
     RESET_TOKEN_EXPIRY = 3600  # 1 hour
 
-    # Debug: time travel controls (set True to enable admin time override)
-    DEBUG_TIME_TRAVEL = os.environ.get('DEBUG_TIME_TRAVEL', 'true').lower() == 'true'

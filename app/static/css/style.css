@@ -378,3 +378,16 @@ tr:hover { background: var(--gray-100); }
     .container { padding: 1rem; }
     .calendar-day { min-height: 40px; padding: 0.25rem; font-size: 0.7rem; }
 }
+
+/* Blocked dates (Annual Meeting, etc.) */
+.calendar-day.blocked {
+    background: #fee2e2 !important;
+    border-color: #fca5a5;
+}
+.calendar-day.blocked .res-label,
+.calendar-day.blocked .blocked-label {
+    color: #dc2626;
+    font-weight: 600;
+    font-size: 0.6rem;
+}
+.legend-blocked { background: #fee2e2; border-color: #fca5a5; }

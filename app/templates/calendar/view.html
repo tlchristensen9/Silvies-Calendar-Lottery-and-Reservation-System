@@ -61,7 +61,7 @@
                     <th>Dates</th>
                     <th>Days</th>
                     <th>Notes</th>
-                    {% if current_user.is_admin or is_my_turn %}<th>Actions</th>{% endif %}
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -73,7 +73,7 @@
                         <!-- computed client-side -->
                     </td>
                     <td>{{ r.notes or '—' }}</td>
-                    {% if current_user.is_admin or (r.member_id == current_user.id and is_my_turn) %}
+                    {% if current_user.is_admin or r.member_id == current_user.id %}
                     <td>
                         <form method="POST" action="{{ url_for('calendar.cancel', reservation_id=r.id) }}"
                               style="display:inline"
@@ -82,6 +82,8 @@
                             <button type="submit" class="btn btn-danger btn-sm">Cancel</button>
                         </form>
                     </td>
+                    {% else %}
+                    <td></td>
                     {% endif %}
                 </tr>
             {% endfor %}

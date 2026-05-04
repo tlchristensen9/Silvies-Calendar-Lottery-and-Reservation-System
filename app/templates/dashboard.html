@@ -122,10 +122,18 @@
         <h2 class="card-title">My Reservations</h2>
         {% if my_reservations %}
         {% for r in my_reservations %}
-        <div style="padding: 0.5rem 0; border-bottom: 1px solid var(--gray-200);">
-            <strong>{{ r.start_date.strftime('%b %d') }} — {{ r.end_date.strftime('%b %d, %Y') }}</strong>
-            <span class="text-small text-muted">({{ r.num_days }} day{{ 's' if r.num_days != 1 }})</span>
-            {% if r.notes %}<br><span class="text-small text-muted">{{ r.notes }}</span>{% endif %}
+        <div style="padding: 0.5rem 0; border-bottom: 1px solid var(--gray-200); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <strong>{{ r.start_date.strftime('%b %d') }} — {{ r.end_date.strftime('%b %d, %Y') }}</strong>
+                <span class="text-small text-muted">({{ r.num_days }} day{{ 's' if r.num_days != 1 }})</span>
+                {% if r.notes %}<br><span class="text-small text-muted">{{ r.notes }}</span>{% endif %}
+            </div>
+            <form method="POST" action="{{ url_for('calendar.cancel', reservation_id=r.id) }}"
+                  style="display:inline; margin-left: 0.5rem; flex-shrink: 0;"
+                  onsubmit="return confirm('Cancel this reservation?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger btn-sm">Cancel</button>
+            </form>
         </div>
         {% endfor %}
         {% else %}

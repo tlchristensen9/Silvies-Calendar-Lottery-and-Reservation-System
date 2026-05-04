@@ -1,0 +1,9 @@
+1. When reserving open calendar booking dates, banner says "go to your dashboard to lock in or change your pick" It should only say this when reserving dates in your lotto pick window during phases 1 and 3, not phase 2 nor for open booking date reservations.
+
+2. Admin should have calendar management override capability (enter a reservation for any member on any dates), this must include the ability to block dates for the annual meeting.
+
+4. Members should always have the ability to cancel their own reservation at any time. During Phase 2, members in this group (did not enter lotto draft), should also be able to reschedule if they cancel within the Phase 2 window. Once phase 2 ends, they cannot make another reservation until the completion of Phase 3.
+
+5. The time travel function can be removed. pick deadline duration and season reset should remain as permanent tools.
+
+6. The mini calendar seems to have grown in size. It now takes awhile to scroll through the whole calendar when making a reservation, and the date selector for the reservation stays at the top. Either have the date selector move with the calendar, or shrink the calendar.

@@ -87,8 +87,8 @@ def reserve():
         else:
             reservation = PhaseEngine.make_reservation(
                 season, current_user, start, end, notes=form.notes.data)
-            # During draft phases, remind member to lock in
-            if season.phase in (PhaseState.PHASE1_DRAFT, PhaseState.PHASE3_REVERSE):
+            # During draft phases, remind member to lock in (only for lottery dates)
+            if reservation.phase_made in (PhaseState.PHASE1_DRAFT, PhaseState.PHASE3_REVERSE):
                 flash(f'Reserved {start} to {end} ({reservation.num_days} day(s)). '
                       f'Go to your dashboard to lock in or change your pick.', 'info')
             else:
@@ -137,7 +137,7 @@ def lock_in():
 @calendar_bp.route('/cancel/<int:reservation_id>', methods=['POST'])
 @login_required
 def cancel(reservation_id):
-    """Cancel a reservation."""
+    """Cancel a reservation. Members can always cancel their own."""
     reservation = Reservation.query.get_or_404(reservation_id)
 
     # Only the owner or admin can cancel
@@ -145,9 +145,18 @@ def cancel(reservation_id):
         flash('You can only cancel your own reservations.', 'danger')
         return redirect(url_for('calendar.view'))
 
+    season = PhaseEngine.get_active_season()
+    was_phase2 = reservation.phase_made == PhaseState.PHASE2_FCFS
+
     PhaseEngine.cancel_reservation(reservation)
-    flash('Reservation cancelled.', 'info')
-    return redirect(url_for('calendar.view'))
+
+    # Phase-aware feedback
+    if was_phase2 and season and season.phase == PhaseState.PHASE2_FCFS:
+        flash('Reservation cancelled. You may pick new dates while Phase 2 is still open.', 'info')
+    else:
+        flash('Reservation cancelled.', 'info')
+
+    return redirect(url_for('main.dashboard'))
 
 
 @calendar_bp.route('/api/reservations')

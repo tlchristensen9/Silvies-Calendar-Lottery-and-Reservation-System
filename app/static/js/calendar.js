@@ -4,6 +4,7 @@
  *   - Lottery dates (Apr 1 - Aug 7): gold/amber - reservations controlled by draft phases
  *   - Open dates (Dec-Mar): green - any member can book anytime
  *   - Hunting season (Aug 8 - Nov 30): brown - cabin open, no reservation needed
+ *   - Blocked dates: red/coral - unavailable (e.g., Annual Meeting)
  * Date types are determined by date ranges, not whole months.
  */
 
@@ -30,14 +31,11 @@ function renderCalendar(containerId, seasonStart, seasonEnd, reservations, canRe
 
     // Determine the predominant type for a month (for the month block styling)
     function getMonthType(monthIdx) {
-        // Check first and 15th of month to determine predominant type
         var first = new Date(start.getFullYear(), monthIdx, 1);
         var mid = new Date(start.getFullYear(), monthIdx, 15);
         var t1 = getDateType(first);
         var t2 = getDateType(mid);
-        // If split month, use the type that covers more days
         if (t1 === t2) return t1;
-        // For split months, check which type has more days
         var lastDay = new Date(start.getFullYear(), monthIdx + 1, 0).getDate();
         var counts = { lottery: 0, hunting: 0, open: 0 };
         for (var dd = 1; dd <= lastDay; dd++) {
@@ -48,7 +46,7 @@ function renderCalendar(containerId, seasonStart, seasonEnd, reservations, canRe
         return 'open';
     }
 
-    // Build a map of reserved dates (stores name + notes)
+    // Build a map of reserved dates (stores name + notes + blocked info)
     var reservedMap = {};
     reservations.forEach(function(r) {
         var rStart = new Date(r.start_date + 'T00:00:00');
@@ -56,7 +54,12 @@ function renderCalendar(containerId, seasonStart, seasonEnd, reservations, canRe
         var d = new Date(rStart);
         while (d <= rEnd) {
             var key = dateToKey(d);
-            reservedMap[key] = { name: r.member_name, notes: r.notes || '' };
+            reservedMap[key] = {
+                name: r.is_blocked ? (r.block_label || 'Blocked') : r.member_name,
+                notes: r.notes || '',
+                is_blocked: r.is_blocked || false,
+                block_label: r.block_label || ''
+            };
             d.setDate(d.getDate() + 1);
         }
     });
@@ -69,6 +72,7 @@ function renderCalendar(containerId, seasonStart, seasonEnd, reservations, canRe
     html += '<span class="legend-item"><span class="legend-swatch legend-lottery"></span> Lottery (Draft)</span>';
     html += '<span class="legend-item"><span class="legend-swatch legend-hunting"></span> Hunting Season</span>';
     html += '<span class="legend-item"><span class="legend-swatch legend-reserved"></span> Reserved</span>';
+    html += '<span class="legend-item"><span class="legend-swatch legend-blocked"></span> Blocked</span>';
     html += '</div>';
 
     // Render all 12 months
@@ -77,7 +81,7 @@ function renderCalendar(containerId, seasonStart, seasonEnd, reservations, canRe
         var monthDate = new Date(year, m, 1);
         var monthName = monthDate.toLocaleString('default', { month: 'long', year: 'numeric' });
 
-        // Check if this is a split month (has multiple date types)
+        // Check if this is a split month
         var isSplit = false;
         var daysInMonth = new Date(year, m + 1, 0).getDate();
         var firstType = getDateType(new Date(year, m, 1));
@@ -122,6 +126,7 @@ function renderCalendar(containerId, seasonStart, seasonEnd, reservations, canRe
             var inSeason = thisDate >= start && thisDate <= end;
             var resInfo = reservedMap[key];
             var isReserved = !!resInfo;
+            var isBlocked = resInfo && resInfo.is_blocked;
             var isToday = thisDate.getTime() === today.getTime();
             var dateType = getDateType(thisDate);
             var isHunting = dateType === 'hunting';
@@ -129,31 +134,36 @@ function renderCalendar(containerId, seasonStart, seasonEnd, reservations, canRe
 
             var classes = 'calendar-day';
             if (!inSeason) classes += ' outside';
-            if (isReserved) classes += ' reserved';
+            if (isBlocked) classes += ' blocked';
+            else if (isReserved) classes += ' reserved';
             if (isToday) classes += ' today';
             if (isHunting) classes += ' hunting-day';
-            if (isLottery && !isReserved) classes += ' lottery-day';
-            if (inSeason && !isReserved && !isHunting && canReserve) classes += ' available';
+            if (isLottery && !isReserved && !isBlocked) classes += ' lottery-day';
+            if (inSeason && !isReserved && !isBlocked && !isHunting && canReserve) classes += ' available';
 
             var content = '<span class="day-num">' + d + '</span>';
-            if (isReserved) {
+            if (isBlocked) {
+                content += '<span class="res-label blocked-label">' + (resInfo.block_label || 'Blocked') + '</span>';
+            } else if (isReserved) {
                 content += '<span class="res-label">' + resInfo.name + '</span>';
                 if (resInfo.notes) {
                     content += '<span class="res-notes">' + resInfo.notes + '</span>';
                 }
             }
 
-            // Add tooltip with notes if present
+            // Tooltip
             var titleAttr = '';
-            if (isReserved && resInfo.notes) {
+            if (isBlocked) {
+                titleAttr = ' title="' + (resInfo.block_label || 'Blocked') + '"';
+            } else if (isReserved && resInfo.notes) {
                 titleAttr = ' title="' + resInfo.name + ': ' + resInfo.notes.replace(/"/g, '&quot;') + '"';
             } else if (isReserved) {
                 titleAttr = ' title="' + resInfo.name + '"';
             }
 
-            // Click to start reservation (not for hunting days)
+            // Click to start reservation (not for hunting, reserved, or blocked days)
             var onClick = '';
-            if (inSeason && !isReserved && !isHunting && canReserve && reserveUrl) {
+            if (inSeason && !isReserved && !isBlocked && !isHunting && canReserve && reserveUrl) {
                 var isoDate = key;
                 var endDefault = new Date(thisDate);
                 endDefault.setDate(endDefault.getDate() + 6);

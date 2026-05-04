@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Admin Reserve — Silvies Club{% endblock %}
+
+{% block content %}
+<h1 style="font-size: 1.5rem; margin-bottom: 1rem;">Admin: Create Reservation</h1>
+
+<div class="card">
+    <p class="text-small text-muted mb-2">
+        Override all phase/block rules. Use this to enter a reservation for any member
+        or block dates for the annual meeting.
+    </p>
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.member_id.label }}
+            {{ form.member_id(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            {{ form.start_date.label }}
+            {{ form.start_date(type="date") }}
+        </div>
+
+        <div class="form-group">
+            {{ form.end_date.label }}
+            {{ form.end_date(type="date") }}
+        </div>
+
+        <div class="form-group">
+            {{ form.notes.label }}
+            {{ form.notes(rows=2, placeholder="Optional notes") }}
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem; padding: 0.75rem; background: #fef3c7; border-radius: 6px;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                {{ form.is_blocked() }}
+                <strong>Block these dates</strong>
+                <span class="text-small text-muted">(makes dates unavailable to all members)</span>
+            </label>
+            <div id="block-label-group" style="margin-top: 0.5rem; display: none;">
+                {{ form.block_label.label }}
+                {{ form.block_label(placeholder="Annual Meeting", class="form-control") }}
+            </div>
+        </div>
+
+        <div class="flex gap-1" style="margin-top: 1rem;">
+            <button type="submit" class="btn btn-primary">Create Reservation</button>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var checkbox = document.getElementById('is_blocked');
+    var labelGroup = document.getElementById('block-label-group');
+    if (checkbox && labelGroup) {
+        function toggle() {
+            labelGroup.style.display = checkbox.checked ? 'block' : 'none';
+        }
+        checkbox.addEventListener('change', toggle);
+        toggle();
+    }
+});
+</script>
+{% endblock %}
