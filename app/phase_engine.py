@@ -14,9 +14,11 @@ class PhaseEngine:
 
     @staticmethod
     def check_and_advance_deadlines(season):
+        """Check for expired pick deadlines. If the member has an unlocked
+        reservation, auto-lock it. If not, skip them (no reservation kept)."""
         if season.phase not in (PhaseState.PHASE1_DRAFT, PhaseState.PHASE3_REVERSE):
             return 0
-        skipped = 0
+        advanced = 0
         now = get_now()
         if season.phase == PhaseState.PHASE1_DRAFT:
             overdue = (DraftOrder.query
@@ -25,8 +27,17 @@ class PhaseEngine:
                        .filter(DraftOrder.phase1_pick_deadline < now)
                        .all())
             for entry in overdue:
+                has_res = Reservation.query.filter_by(
+                    season_id=season.id, member_id=entry.member_id,
+                    phase_made=PhaseState.PHASE1_DRAFT, is_cancelled=False).first()
                 entry.phase1_picked = True
-                skipped += 1
+                advanced += 1
+                if has_res:
+                    current_app.logger.info(
+                        f'Auto-locked Phase 1 pick for member {entry.member_id} (deadline expired)')
+                else:
+                    current_app.logger.info(
+                        f'Skipped Phase 1 pick for member {entry.member_id} (no reservation, deadline expired)')
         elif season.phase == PhaseState.PHASE3_REVERSE:
             overdue = (DraftOrder.query
                        .filter_by(season_id=season.id, phase3_picked=False)
@@ -34,13 +45,22 @@ class PhaseEngine:
                        .filter(DraftOrder.phase3_pick_deadline < now)
                        .all())
             for entry in overdue:
+                has_res = Reservation.query.filter_by(
+                    season_id=season.id, member_id=entry.member_id,
+                    phase_made=PhaseState.PHASE3_REVERSE, is_cancelled=False).first()
                 entry.phase3_picked = True
-                skipped += 1
-        if skipped:
+                advanced += 1
+                if has_res:
+                    current_app.logger.info(
+                        f'Auto-locked Phase 3 pick for member {entry.member_id} (deadline expired)')
+                else:
+                    current_app.logger.info(
+                        f'Skipped Phase 3 pick for member {entry.member_id} (no reservation, deadline expired)')
+        if advanced:
             db.session.commit()
             PhaseEngine._maybe_advance_draft_phase(season)
         PhaseEngine._ensure_current_pick_has_deadline(season)
-        return skipped
+        return advanced
 
     @staticmethod
     def _maybe_advance_draft_phase(season):
@@ -63,7 +83,6 @@ class PhaseEngine:
         if not current:
             return
         if season.phase == PhaseState.PHASE1_DRAFT and not current.phase1_pick_deadline:
-            # Season-level override (hours) takes priority, else config default (days)
             if season.phase1_pick_hours:
                 current.phase1_pick_deadline = get_now() + timedelta(hours=season.phase1_pick_hours)
             else:
@@ -284,15 +303,15 @@ class PhaseEngine:
             if not can:
                 return False, reason
             # Friday-Thursday block rule: Phase 1 and Phase 2 only
+            # Reservation can start on any day but must end by the Thursday
+            # of the Fri-Thu block that the start date falls in.
             if season.phase in (PhaseState.PHASE1_DRAFT, PhaseState.PHASE2_FCFS):
-                block_start = PhaseEngine._get_fri_thu_block_start(start_date)
-                if start_date != block_start:
-                    return False, (f'Reservation must start on Friday '
-                                   f'({block_start.strftime("%B %d")}).')
                 block_end = PhaseEngine._get_fri_thu_block_end(start_date)
                 if end_date > block_end:
-                    return False, (f'Reservation must end by {block_end.strftime("%A, %B %d")} '
-                                   f'(the Thursday of this Fri-Thu block).')
+                    return False, (
+                        f'Reservation must end by {block_end.strftime("%A, %B %d")} '
+                        f'(the Thursday of this Fri-Thu block).'
+                    )
         existing = Reservation.query.filter_by(season_id=season.id, is_cancelled=False).all()
         for r in existing:
             if r.start_date <= end_date and r.end_date >= start_date:
@@ -311,20 +330,56 @@ class PhaseEngine:
                                   start_date=start_date, end_date=end_date,
                                   phase_made=phase_made, notes=notes)
         db.session.add(reservation)
-        if has_lottery_dates:
-            if season.phase == PhaseState.PHASE1_DRAFT:
-                draft_entry = DraftOrder.query.filter_by(season_id=season.id, member_id=member.id).first()
-                if draft_entry:
-                    draft_entry.phase1_picked = True
-            elif season.phase == PhaseState.PHASE3_REVERSE:
-                draft_entry = DraftOrder.query.filter_by(season_id=season.id, member_id=member.id).first()
-                if draft_entry:
-                    draft_entry.phase3_picked = True
+
+        # During draft phases, do NOT auto-advance — member must lock in.
+        # For Phase 2 (FCFS) and Open, finalize immediately.
+        if has_lottery_dates and season.phase == PhaseState.PHASE2_FCFS:
+            pass  # Phase 2 has no draft order, just mark as complete
+        elif not has_lottery_dates or season.phase not in (PhaseState.PHASE1_DRAFT, PhaseState.PHASE3_REVERSE):
+            pass  # Open booking or non-draft phase
+
         db.session.commit()
-        if has_lottery_dates:
-            PhaseEngine._maybe_advance_draft_phase(season)
-            PhaseEngine._ensure_current_pick_has_deadline(season)
         return reservation
+
+    @staticmethod
+    def lock_in_pick(season, member):
+        """Lock in the current picker's reservation and advance the draft.
+        Returns (success, message)."""
+        if season.phase not in (PhaseState.PHASE1_DRAFT, PhaseState.PHASE3_REVERSE):
+            return False, 'Lock-in is only available during draft phases.'
+
+        current = season.current_pick
+        if not current or current.member_id != member.id:
+            return False, 'It is not your turn to pick.'
+
+        # Verify they have an active reservation for this season in lottery dates
+        active_res = Reservation.query.filter_by(
+            season_id=season.id, member_id=member.id, is_cancelled=False
+        ).filter(Reservation.phase_made == season.phase).first()
+
+        if not active_res:
+            return False, 'You must make a reservation before locking in.'
+
+        # Mark as picked
+        if season.phase == PhaseState.PHASE1_DRAFT:
+            current.phase1_picked = True
+        elif season.phase == PhaseState.PHASE3_REVERSE:
+            current.phase3_picked = True
+
+        db.session.commit()
+        PhaseEngine._maybe_advance_draft_phase(season)
+        PhaseEngine._ensure_current_pick_has_deadline(season)
+        return True, 'Your reservation is locked in!'
+
+    @staticmethod
+    def get_current_draft_reservation(season, member):
+        """Get the member's unlocked draft reservation for the current phase, if any."""
+        if season.phase not in (PhaseState.PHASE1_DRAFT, PhaseState.PHASE3_REVERSE):
+            return None
+        return Reservation.query.filter_by(
+            season_id=season.id, member_id=member.id,
+            phase_made=season.phase, is_cancelled=False
+        ).first()
 
     @staticmethod
     def cancel_reservation(reservation):

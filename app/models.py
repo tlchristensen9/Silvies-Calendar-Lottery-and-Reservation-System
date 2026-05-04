@@ -73,8 +73,8 @@ class Season(db.Model):
     phase3_start = db.Column(db.Date, nullable=True)
     open_fcfs_start = db.Column(db.Date, nullable=True)
     # Admin-overridable pick deadline durations (hours)
-    phase1_pick_hours = db.Column(db.Integer, nullable=True)   # None = use config default
-    phase3_pick_hours = db.Column(db.Integer, nullable=True)   # None = use config default
+    phase1_pick_hours = db.Column(db.Integer, nullable=True)
+    phase3_pick_hours = db.Column(db.Integer, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     draft_orders = db.relationship('DraftOrder', backref='season', lazy='dynamic', cascade='all, delete-orphan')
     reservations = db.relationship('Reservation', backref='season', lazy='dynamic', cascade='all, delete-orphan')
@@ -188,7 +188,7 @@ class AppSetting(db.Model):
     @staticmethod
     def get(key, default=None):
         """Retrieve a setting value by key."""
-        row = db.session.get(AppSetting, key)
+        row = AppSetting.query.filter_by(key=key).first()
         return row.value if row else default
 
     @staticmethod

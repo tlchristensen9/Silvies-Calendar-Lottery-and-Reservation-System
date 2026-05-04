@@ -61,7 +61,7 @@
                     <th>Dates</th>
                     <th>Days</th>
                     <th>Notes</th>
-                    {% if current_user.is_admin %}<th>Actions</th>{% endif %}
+                    {% if current_user.is_admin or is_my_turn %}<th>Actions</th>{% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -73,7 +73,7 @@
                         <!-- computed client-side -->
                     </td>
                     <td>{{ r.notes or '—' }}</td>
-                    {% if current_user.is_admin %}
+                    {% if current_user.is_admin or (r.member_id == current_user.id and is_my_turn) %}
                     <td>
                         <form method="POST" action="{{ url_for('calendar.cancel', reservation_id=r.id) }}"
                               style="display:inline"

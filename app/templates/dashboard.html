@@ -35,7 +35,58 @@
         <p class="text-small">Your draft position: <strong>#{{ draft_position }}</strong></p>
         {% endif %}
 
-        {% if can_reserve %}
+        {% if is_my_turn and draft_reservation %}
+        <!-- Current picker has a tentative reservation — show lock-in or change -->
+        <div class="mt-1" style="background: #ecfdf5; border: 1px solid var(--green-dark); padding: 0.75rem 1rem; border-radius: 6px;">
+            <p style="color: var(--green-dark); font-weight: 600; margin-bottom: 0.5rem;">
+                Your pick: {{ draft_reservation.start_date.strftime('%b %d') }} — {{ draft_reservation.end_date.strftime('%b %d') }}
+                ({{ draft_reservation.num_days }} day{{ 's' if draft_reservation.num_days != 1 }})
+            </p>
+            <div class="flex gap-1" style="flex-wrap: wrap;">
+                <form method="POST" action="{{ url_for('calendar.lock_in') }}" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-primary"
+                            onclick="return confirm('Lock in these dates? This will finalize your pick and move the draft to the next person.');">
+                        Lock In Reservation
+                    </button>
+                </form>
+                <form method="POST" action="{{ url_for('calendar.cancel', reservation_id=draft_reservation.id) }}"
+                      style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-secondary"
+                            onclick="return confirm('Cancel this reservation? You can then pick new dates.');">
+                        Change Dates
+                    </button>
+                </form>
+            </div>
+            {% if season.phase == 'phase1_draft' and current_pick.phase1_pick_deadline %}
+            <p class="text-small text-muted" style="margin-top: 0.5rem;">
+                Deadline: {{ current_pick.phase1_pick_deadline.strftime('%b %d, %Y %I:%M %p') }}
+            </p>
+            {% elif season.phase == 'phase3_reverse' and current_pick.phase3_pick_deadline %}
+            <p class="text-small text-muted" style="margin-top: 0.5rem;">
+                Deadline: {{ current_pick.phase3_pick_deadline.strftime('%b %d, %Y %I:%M %p') }}
+            </p>
+            {% endif %}
+        </div>
+
+        {% elif is_my_turn and not draft_reservation %}
+        <!-- Current picker hasn't reserved yet -->
+        <p class="mt-1" style="color: var(--green-dark); font-weight: 600;">It's your turn to pick!</p>
+        <a href="{{ url_for('calendar.reserve') }}" class="btn btn-primary mt-1">Pick Your Dates</a>
+        {% if current_pick %}
+            {% if season.phase == 'phase1_draft' and current_pick.phase1_pick_deadline %}
+            <p class="text-small text-muted" style="margin-top: 0.5rem;">
+                Deadline: {{ current_pick.phase1_pick_deadline.strftime('%b %d, %Y %I:%M %p') }}
+            </p>
+            {% elif season.phase == 'phase3_reverse' and current_pick.phase3_pick_deadline %}
+            <p class="text-small text-muted" style="margin-top: 0.5rem;">
+                Deadline: {{ current_pick.phase3_pick_deadline.strftime('%b %d, %Y %I:%M %p') }}
+            </p>
+            {% endif %}
+        {% endif %}
+
+        {% elif can_reserve %}
         <p class="mt-1" style="color: var(--green-dark); font-weight: 600;">{{ reserve_reason }}</p>
         <a href="{{ url_for('calendar.reserve') }}" class="btn btn-primary mt-1">Pick Your Dates</a>
         {% else %}
@@ -54,7 +105,7 @@
             {% endif %}
         {% endif %}
 
-        {% if current_pick %}
+        {% if current_pick and not is_my_turn %}
         <div class="mt-2 text-small">
             <strong>Currently picking:</strong> {{ current_pick.member.name }} (#{{ current_pick.position }})
             {% if season.phase == 'phase1_draft' and current_pick.phase1_pick_deadline %}

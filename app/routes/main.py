@@ -30,6 +30,8 @@ def dashboard():
     can_reserve = False
     reserve_reason = ''
     current_pick = None
+    draft_reservation = None
+    is_my_turn = False
 
     if season:
         my_reservations = (Reservation.query
@@ -46,10 +48,18 @@ def dashboard():
         can_reserve, reserve_reason = PhaseEngine.can_member_reserve(current_user, season)
         current_pick = season.current_pick
 
+        # Check if it's this member's turn and they have a tentative draft reservation
+        if (current_pick and current_pick.member_id == current_user.id
+                and season.phase in (PhaseState.PHASE1_DRAFT, PhaseState.PHASE3_REVERSE)):
+            is_my_turn = True
+            draft_reservation = PhaseEngine.get_current_draft_reservation(season, current_user)
+
     return render_template('dashboard.html',
                            season=season,
                            my_reservations=my_reservations,
                            draft_position=draft_position,
                            can_reserve=can_reserve,
                            reserve_reason=reserve_reason,
-                           current_pick=current_pick)
+                           current_pick=current_pick,
+                           draft_reservation=draft_reservation,
+                           is_my_turn=is_my_turn)

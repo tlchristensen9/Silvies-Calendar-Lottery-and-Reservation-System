@@ -130,7 +130,6 @@ def delete_member(member_id):
         flash('You cannot delete your own account.', 'danger')
         return redirect(url_for('admin.members'))
     name = member.name
-    # Cancel any active reservations
     Reservation.query.filter_by(member_id=member.id).delete()
     DraftOrder.query.filter_by(member_id=member.id).delete()
     db.session.delete(member)
@@ -196,7 +195,7 @@ def advance_phase2(season_id):
     season = Season.query.get_or_404(season_id)
     try:
         PhaseEngine.advance_to_phase2(season)
-        flash('Advanced to Phase 2 — non-draw members can now reserve.', 'success')
+        flash('Advanced to Phase 2 -- non-draw members can now reserve.', 'success')
     except ValueError as e:
         flash(str(e), 'danger')
     return redirect(url_for('admin.dashboard'))
@@ -208,7 +207,7 @@ def advance_phase3(season_id):
     season = Season.query.get_or_404(season_id)
     try:
         PhaseEngine.advance_to_phase3(season)
-        flash('Advanced to Phase 3 — reverse draft picks begin.', 'success')
+        flash('Advanced to Phase 3 -- reverse draft picks begin.', 'success')
     except ValueError as e:
         flash(str(e), 'danger')
     return redirect(url_for('admin.dashboard'))
@@ -253,8 +252,10 @@ def admin_optin_member(season_id, member_id):
     if existing:
         flash(f'{member.name} is already opted in.', 'info')
     else:
-        max_pos = db.session.query(db.func.max(DraftOrder.position)).filter_by(season_id=season.id).scalar() or 0
-        entry = DraftOrder(season_id=season.id, member_id=member.id, position=max_pos + 1)
+        max_pos = (db.session.query(db.func.max(DraftOrder.position))
+                   .filter_by(season_id=season.id).scalar() or 0)
+        entry = DraftOrder(season_id=season.id, member_id=member.id,
+                           position=max_pos + 1)
         db.session.add(entry)
         db.session.commit()
         flash(f'{member.name} opted into the draw.', 'success')
@@ -409,7 +410,7 @@ def reset_season(season_id):
     confirm_year = request.form.get('confirm_year', '').strip()
 
     if confirm_year != str(season.year):
-        flash(f'Reset cancelled — you must type "{season.year}" to confirm.', 'danger')
+        flash(f'Reset cancelled -- you must type "{season.year}" to confirm.', 'danger')
         return redirect(url_for('admin.admin_tools'))
 
     # Wipe all reservations for this season

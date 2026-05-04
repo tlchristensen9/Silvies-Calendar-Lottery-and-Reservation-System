@@ -151,15 +151,14 @@ class TestFridayThursdayBlockRule(unittest.TestCase):
         ok, msg = PhaseEngine.validate_reservation(self.season, self.member, fri, thu)
         self.assertTrue(ok, f"Expected valid but got: {msg}")
 
-    def test_invalid_non_friday_start_phase2(self):
+    def test_non_friday_start_allowed_phase2(self):
         from app.phase_engine import PhaseEngine
-        # Wednesday April 15 — not a Friday
+        # Wednesday April 15 to Thursday April 16 — within same Fri-Thu block, should be allowed
         wed = date(2026, 4, 15)
         thu = date(2026, 4, 16)
         self.assertEqual(wed.weekday(), 2)
         ok, msg = PhaseEngine.validate_reservation(self.season, self.member, wed, thu)
-        self.assertFalse(ok, f"Non-Friday start should be rejected, got: {msg}")
-        self.assertIn('Friday', msg)
+        self.assertTrue(ok, f"Non-Friday start should be allowed within block: {msg}")
 
     def test_invalid_non_thursday_end_phase2(self):
         from app.phase_engine import PhaseEngine

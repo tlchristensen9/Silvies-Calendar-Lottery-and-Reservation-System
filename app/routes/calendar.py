@@ -26,6 +26,7 @@ def view():
     reserve_reason = ''
     draft_order = []
 
+    is_my_turn = False
     if season:
         reservations = PhaseEngine.get_reserved_dates(season)
         can_reserve, reserve_reason = PhaseEngine.can_member_reserve(current_user, season)
@@ -38,6 +39,12 @@ def view():
                            .order_by(DraftOrder.position)
                            .all())
 
+        # Check if it's this member's turn (for cancel button visibility)
+        current_pick = season.current_pick
+        if (current_pick and current_pick.member_id == current_user.id
+                and season.phase in (PhaseState.PHASE1_DRAFT, PhaseState.PHASE3_REVERSE)):
+            is_my_turn = True
+
     calendar_config = PhaseEngine.get_calendar_config(season) if season else {}
 
     return render_template('calendar/view.html',
@@ -46,6 +53,7 @@ def view():
                            can_reserve=can_reserve,
                            reserve_reason=reserve_reason,
                            draft_order=draft_order,
+                           is_my_turn=is_my_turn,
                            calendar_config=calendar_config)
 
 
@@ -79,8 +87,13 @@ def reserve():
         else:
             reservation = PhaseEngine.make_reservation(
                 season, current_user, start, end, notes=form.notes.data)
-            flash(f'Reserved {start} to {end} - {reservation.num_days} day(s).', 'success')
-            return redirect(url_for('calendar.view'))
+            # During draft phases, remind member to lock in
+            if season.phase in (PhaseState.PHASE1_DRAFT, PhaseState.PHASE3_REVERSE):
+                flash(f'Reserved {start} to {end} ({reservation.num_days} day(s)). '
+                      f'Go to your dashboard to lock in or change your pick.', 'info')
+            else:
+                flash(f'Reserved {start} to {end} - {reservation.num_days} day(s).', 'success')
+            return redirect(url_for('main.dashboard'))
 
     # Pre-populate with query params from calendar click
     if request.args.get('start'):
@@ -102,6 +115,23 @@ def reserve():
                            form=form, season=season,
                            reservations=existing_reservations,
                            calendar_config=calendar_config)
+
+
+@calendar_bp.route('/lock-in', methods=['POST'])
+@login_required
+def lock_in():
+    """Lock in the current picker's draft reservation and advance the draft."""
+    season = PhaseEngine.get_active_season()
+    if not season:
+        flash('No active season.', 'warning')
+        return redirect(url_for('calendar.view'))
+
+    success, message = PhaseEngine.lock_in_pick(season, current_user)
+    if success:
+        flash(message, 'success')
+    else:
+        flash(message, 'warning')
+    return redirect(url_for('main.dashboard'))
 
 
 @calendar_bp.route('/cancel/<int:reservation_id>', methods=['POST'])
@@ -150,8 +180,10 @@ def opt_in():
         flash('You are already opted in.', 'info')
     else:
         # Temp position - reassigned when the draw runs
-        max_pos = db.session.query(db.func.max(DraftOrder.position)).filter_by(season_id=season.id).scalar() or 0
-        entry = DraftOrder(season_id=season.id, member_id=current_user.id, position=max_pos + 1)
+        max_pos = (db.session.query(db.func.max(DraftOrder.position))
+                   .filter_by(season_id=season.id).scalar() or 0)
+        entry = DraftOrder(season_id=season.id, member_id=current_user.id,
+                           position=max_pos + 1)
         db.session.add(entry)
         db.session.commit()
         flash('You have opted in for the draw!', 'success')
