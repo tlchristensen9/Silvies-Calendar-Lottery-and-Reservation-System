@@ -179,14 +179,17 @@ class TestGetNowSimple(unittest.TestCase):
 
     def test_get_now_returns_real_time(self):
         from app.utils import get_now
+        from zoneinfo import ZoneInfo
         now = get_now()
-        real_now = datetime.utcnow()
+        real_now = datetime.now(ZoneInfo('US/Pacific')).replace(tzinfo=None)
         self.assertAlmostEqual(now.timestamp(), real_now.timestamp(), delta=2)
 
     def test_get_today_returns_real_date(self):
         from app.utils import get_today
+        from zoneinfo import ZoneInfo
         today = get_today()
-        self.assertEqual(today, date.today())
+        expected = datetime.now(ZoneInfo('US/Pacific')).date()
+        self.assertEqual(today, expected)
 
 
 if __name__ == '__main__':

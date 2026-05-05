@@ -81,6 +81,12 @@
                     // so setting the value above handles the "jump" automatically
                 }
             });
+
+            // Auto-default start date to lottery period start if no date selected
+            {% if lottery_start and not form.start_date.data %}
+            startInput.value = '{{ lottery_start }}';
+            endInput.min = '{{ lottery_start }}';
+            {% endif %}
         }
     });
 </script>

@@ -1,0 +1,11 @@
+1. Current time in system is UTC, need to update to local time.
+
+2. On Mobile view, the sticky reservation date selector is functional but the date boxes of the mini calendar months scroll on top of the date selector. They should go behind with the rest of the month formatting.
+
+3. Auto send emails to members for the following occurrences:
+- To all members - lottery opt-in is now open. Login to website to opt in to the lottery.
+- It is your turn to pick in lottery phase 1 - include the members deadline to make their choice.
+- The calendar is open for Phase 2 reservations (to all members who did not join the lottery).
+- It is your turn to pick in lottery phase 3 - include the member's deadline to make their choice.
+
+4. When a season is active, have the reservation date selector start date auto jump to the first day of April of the active season.

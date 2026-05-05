@@ -41,3 +41,6 @@ class Config:
     # Password reset token expiry (seconds)
     RESET_TOKEN_EXPIRY = 3600  # 1 hour
 
+    # Timezone for all date/time operations
+    TIMEZONE = os.environ.get('TIMEZONE', 'US/Pacific')
+

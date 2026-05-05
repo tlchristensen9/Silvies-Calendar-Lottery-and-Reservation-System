@@ -1,0 +1,172 @@
+C:\Users\tom.c\Desktop\Silvies-Calendar-Lottery-and-Reservation-System>python run.py
+ * Serving Flask app 'app'
+ * Debug mode: on
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5000
+Press CTRL+C to quit
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 139-552-968
+127.0.0.1 - - [04/May/2026 16:03:03] "GET / HTTP/1.1" 302 -
+127.0.0.1 - - [04/May/2026 16:03:03] "GET /dashboard HTTP/1.1" 500 -
+Traceback (most recent call last):
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ^
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such column: reservations.is_blocked
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 1514, in wsgi_app
+    response = self.handle_exception(e)
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\tom.c\Desktop\Silvies-Calendar-Lottery-and-Reservation-System\app\routes\main.py", line 41, in dashboard
+    .all())
+     ~~~^^
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\orm\query.py", line 2711, in all
+    return self._iter().all()  # type: ignore
+           ~~~~~~~~~~^^
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\orm\query.py", line 2864, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\orm\session.py", line 2351, in execute
+    return self._execute_internal(
+
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\orm\session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\sql\elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ^
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\engine\base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ^
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: reservations.is_blocked
+[SQL: SELECT reservations.id AS reservations_id, reservations.season_id AS reservations_season_id, reservations.member_id AS reservations_member_id, reservations.start_date AS reservations_start_date, reservations.end_date AS reservations_end_date, reservations.phase_made AS reservations_phase_made, reservations.notes AS reservations_notes, reservations.created_at AS reservations_created_at, reservations.cancelled_at AS reservations_cancelled_at, reservations.is_cancelled AS reservations_is_cancelled, reservations.is_blocked AS reservations_is_blocked, reservations.block_label AS reservations_block_label
+FROM reservations
+WHERE reservations.season_id = ? AND reservations.member_id = ? AND reservations.is_cancelled = 0 ORDER BY reservations.start_date]
+[parameters: (1, 1)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+127.0.0.1 - - [04/May/2026 16:03:03] "GET /dashboard?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1" 200 -
+127.0.0.1 - - [04/May/2026 16:03:03] "GET /dashboard?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1" 200 -
+127.0.0.1 - - [04/May/2026 16:03:03] "GET /dashboard?__debugger__=yes&cmd=resource&f=console.png&s=hOfyIchGj31S9IQ5BFda HTTP/1.1" 200 -
+127.0.0.1 - - [04/May/2026 16:03:03] "GET /dashboard?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1" 200 -
+127.0.0.1 - - [04/May/2026 16:03:34] "GET / HTTP/1.1" 302 -
+127.0.0.1 - - [04/May/2026 16:03:34] "GET /dashboard HTTP/1.1" 500 -
+Traceback (most recent call last):
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ^
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such column: reservations.is_blocked
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 1514, in wsgi_app
+    response = self.handle_exception(e)
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\tom.c\Desktop\Silvies-Calendar-Lottery-and-Reservation-System\app\routes\main.py", line 41, in dashboard
+    .all())
+     ~~~^^
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\orm\query.py", line 2711, in all
+    return self._iter().all()  # type: ignore
+           ~~~~~~~~~~^^
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\orm\query.py", line 2864, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\orm\session.py", line 2351, in execute
+    return self._execute_internal(
+
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\orm\session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\sql\elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ^
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\engine\base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ^
+  File "C:\Users\tom.c\AppData\Local\Programs\Python\Python314\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: reservations.is_blocked
+[SQL: SELECT reservations.id AS reservations_id, reservations.season_id AS reservations_season_id, reservations.member_id AS reservations_member_id, reservations.start_date AS reservations_start_date, reservations.end_date AS reservations_end_date, reservations.phase_made AS reservations_phase_made, reservations.notes AS reservations_notes, reservations.created_at AS reservations_created_at, reservations.cancelled_at AS reservations_cancelled_at, reservations.is_cancelled AS reservations_is_cancelled, reservations.is_blocked AS reservations_is_blocked, reservations.block_label AS reservations_block_label
+FROM reservations
+WHERE reservations.season_id = ? AND reservations.member_id = ? AND reservations.is_cancelled = 0 ORDER BY reservations.start_date]
+[parameters: (1, 1)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+127.0.0.1 - - [04/May/2026 16:03:34] "GET /dashboard?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1" 304 -
+127.0.0.1 - - [04/May/2026 16:03:34] "GET /dashboard?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1" 304 -
+127.0.0.1 - - [04/May/2026 16:03:34] "GET /dashboard?__debugger__=yes&cmd=resource&f=console.png&s=hOfyIchGj31S9IQ5BFda HTTP/1.1" 304 -

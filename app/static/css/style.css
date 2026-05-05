@@ -370,6 +370,15 @@ tr:hover { background: var(--gray-100); }
     margin-top: auto;
 }
 
+/* Sticky reservation form z-index (mobile scroll fix) */
+.grid-2 > .card[style*="sticky"] {
+    z-index: 10;
+}
+.grid-2 > .card:not([style*="sticky"]) {
+    position: relative;
+    z-index: 1;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .grid-2 { grid-template-columns: 1fr; }

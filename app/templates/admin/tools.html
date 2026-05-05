@@ -6,6 +6,33 @@
 
 <a href="{{ url_for('admin.dashboard') }}" style="display: inline-block; margin-bottom: 1rem; color: var(--green-dark);">← Back to Dashboard</a>
 
+<!-- Automated Emails Toggle -->
+<div class="card">
+    <h2 class="card-title">Automated Emails</h2>
+    <p class="text-small text-muted mb-1">
+        When enabled, the system automatically sends email notifications to members
+        during phase transitions (opt-in open, your turn to pick, Phase 2 open).
+        Disable this while testing to avoid sending emails to members.
+    </p>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        <form method="POST" action="{{ url_for('admin.toggle_emails') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% if emails_enabled %}
+            <button type="submit" class="btn btn-sm" style="background: var(--green-mid); color: white;">
+                Emails: ON — Click to Disable
+            </button>
+            {% else %}
+            <button type="submit" class="btn btn-sm btn-secondary">
+                Emails: OFF — Click to Enable
+            </button>
+            {% endif %}
+        </form>
+        <span class="text-small text-muted">
+            Currently: <strong>{{ 'Enabled' if emails_enabled else 'Disabled' }}</strong>
+        </span>
+    </div>
+</div>
+
 <!-- Pick Deadline Configuration -->
 <div class="card">
     <h2 class="card-title">Pick Deadline Duration</h2>

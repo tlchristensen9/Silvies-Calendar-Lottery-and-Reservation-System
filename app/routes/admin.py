@@ -293,9 +293,11 @@ def admin_cancel_reservation(res_id):
 @admin_bp.route('/tools')
 @admin_required
 def admin_tools():
-    """Admin tools page: deadline config, season reset."""
+    """Admin tools page: deadline config, email toggle, season reset."""
     season = PhaseEngine.get_active_season()
-    return render_template('admin/tools.html', season=season)
+    emails_enabled = AppSetting.get('emails_enabled', 'off') == 'on'
+    return render_template('admin/tools.html', season=season,
+                           emails_enabled=emails_enabled)
 
 
 @admin_bp.route('/tools/deadlines', methods=['POST'])
@@ -325,6 +327,19 @@ def update_deadlines():
     else:
         flash('Pick deadlines reset to config defaults.', 'info')
 
+    return redirect(url_for('admin.admin_tools'))
+
+
+@admin_bp.route('/tools/toggle-emails', methods=['POST'])
+@admin_required
+def toggle_emails():
+    """Toggle automated phase-transition emails on or off."""
+    current = AppSetting.get('emails_enabled', 'off')
+    new_val = 'off' if current == 'on' else 'on'
+    AppSetting.set('emails_enabled', new_val)
+    db.session.commit()
+    state = 'enabled' if new_val == 'on' else 'disabled'
+    flash(f'Automated emails {state}.', 'success')
     return redirect(url_for('admin.admin_tools'))
 
 

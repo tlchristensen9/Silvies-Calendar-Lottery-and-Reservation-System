@@ -1,7 +1,7 @@
 """Calendar routes: view calendar, make/cancel reservations."""
 
 from datetime import date, datetime, timedelta
-from flask import (Blueprint, render_template, redirect, url_for,
+from flask import (Blueprint, render_template, redirect, url_for, current_app,
                    flash, request, jsonify)
 from flask_login import login_required, current_user
 from app import db
@@ -47,6 +47,15 @@ def view():
 
     calendar_config = PhaseEngine.get_calendar_config(season) if season else {}
 
+    # Default start date: first day of lottery period for the active season
+    lottery_start = None
+    if season:
+        lottery_start = date(
+            season.year,
+            current_app.config['LOTTERY_START_MONTH'],
+            current_app.config['LOTTERY_START_DAY']
+        ).isoformat()
+
     return render_template('calendar/view.html',
                            season=season,
                            reservations=reservations,
@@ -54,7 +63,8 @@ def view():
                            reserve_reason=reserve_reason,
                            draft_order=draft_order,
                            is_my_turn=is_my_turn,
-                           calendar_config=calendar_config)
+                           calendar_config=calendar_config,
+                           lottery_start=lottery_start)
 
 
 @calendar_bp.route('/reserve', methods=['GET', 'POST'])
@@ -111,10 +121,20 @@ def reserve():
 
     calendar_config = PhaseEngine.get_calendar_config(season) if season else {}
 
+    # Default start date: first day of lottery period for the active season
+    lottery_start = None
+    if season:
+        lottery_start = date(
+            season.year,
+            current_app.config['LOTTERY_START_MONTH'],
+            current_app.config['LOTTERY_START_DAY']
+        ).isoformat()
+
     return render_template('calendar/reserve.html',
                            form=form, season=season,
                            reservations=existing_reservations,
-                           calendar_config=calendar_config)
+                           calendar_config=calendar_config,
+                           lottery_start=lottery_start)
 
 
 @calendar_bp.route('/lock-in', methods=['POST'])

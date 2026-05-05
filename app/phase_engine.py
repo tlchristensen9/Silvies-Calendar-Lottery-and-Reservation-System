@@ -4,6 +4,7 @@ from flask import current_app
 from app import db
 from app.models import (Season, DraftOrder, Reservation, Member, PhaseState, MemberRole)
 from app.utils import get_now, get_today
+from app import email_service
 
 
 class PhaseEngine:
@@ -89,6 +90,7 @@ class PhaseEngine:
                 days = current_app.config.get('PHASE1_PICK_DAYS', 5)
                 current.phase1_pick_deadline = get_now() + timedelta(days=days)
             db.session.commit()
+            email_service.notify_your_turn(current, season, phase_num=1)
         elif season.phase == PhaseState.PHASE3_REVERSE and not current.phase3_pick_deadline:
             if season.phase3_pick_hours:
                 current.phase3_pick_deadline = get_now() + timedelta(hours=season.phase3_pick_hours)
@@ -96,6 +98,7 @@ class PhaseEngine:
                 days = current_app.config.get('PHASE3_PICK_DAYS', 3)
                 current.phase3_pick_deadline = get_now() + timedelta(days=days)
             db.session.commit()
+            email_service.notify_your_turn(current, season, phase_num=3)
 
     @staticmethod
     def start_optin(season):
@@ -104,6 +107,7 @@ class PhaseEngine:
         season.phase = PhaseState.PHASE1_OPTIN
         season.phase1_optin_start = get_today()
         db.session.commit()
+        email_service.notify_optin_open(season)
 
     @staticmethod
     def run_draft_draw(season):
@@ -132,6 +136,7 @@ class PhaseEngine:
         season.phase = PhaseState.PHASE2_FCFS
         season.phase2_start = get_today()
         db.session.commit()
+        email_service.notify_phase2_open(season)
 
     @staticmethod
     def advance_to_phase3(season):
