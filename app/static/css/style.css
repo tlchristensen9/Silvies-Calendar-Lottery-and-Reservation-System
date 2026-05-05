@@ -386,6 +386,19 @@ tr:hover { background: var(--gray-100); }
     .nav-links { gap: 0.5rem; }
     .container { padding: 1rem; }
     .calendar-day { min-height: 40px; padding: 0.25rem; font-size: 0.7rem; }
+
+    /* Prevent cards and inputs from overflowing the viewport */
+    .card {
+        max-width: 100%;
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+    .card input,
+    .card textarea,
+    .card select {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
 }
 
 /* Blocked dates (Annual Meeting, etc.) */
