@@ -23,7 +23,8 @@
             </div>
             <div class="form-group">
                 {{ form.notes.label }}
-                {{ form.notes(rows=3, placeholder="e.g., Arriving Friday evening, leaving Wednesday morning") }}
+                {{ form.notes(rows=2, maxlength=140, placeholder="e.g., Arriving Friday evening, leaving Wednesday morning", id="notes") }}
+                <small class="text-muted" id="notes-counter" style="font-size: 0.75rem;">0 / 140</small>
             </div>
             <button type="submit" class="btn btn-primary">Confirm Reservation</button>
             <a href="{{ url_for('calendar.view') }}" class="btn btn-secondary">Cancel</a>
@@ -82,7 +83,18 @@
                 }
             });
 
-            // Auto-default start date to lottery period start if no date selected
+            // Notes character counter
+        var notesInput = document.getElementById('notes');
+        var notesCounter = document.getElementById('notes-counter');
+        if (notesInput && notesCounter) {
+            function updateCounter() {
+                notesCounter.textContent = notesInput.value.length + ' / 140';
+            }
+            notesInput.addEventListener('input', updateCounter);
+            updateCounter();
+        }
+
+        // Auto-default start date to lottery period start if no date selected
             {% if lottery_start and not form.start_date.data %}
             startInput.value = '{{ lottery_start }}';
             endInput.min = '{{ lottery_start }}';
