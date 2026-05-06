@@ -30,8 +30,8 @@
 
         <div class="form-group">
             {{ form.notes.label }}
-            {{ form.notes(rows=2, maxlength=140, placeholder="Optional notes", id="notes") }}
-            <small class="text-muted" id="notes-counter" style="font-size: 0.75rem;">0 / 140</small>
+            {{ form.notes(rows=1, maxlength=60, placeholder="Optional notes", id="notes") }}
+            <small class="text-muted" id="notes-counter" style="font-size: 0.75rem;">0 / 60</small>
         </div>
 
         <div class="form-group" style="margin-top: 1rem; padding: 0.75rem; background: #fef3c7; border-radius: 6px;">
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var notesCounter = document.getElementById('notes-counter');
     if (notesInput && notesCounter) {
         function updateCounter() {
-            notesCounter.textContent = notesInput.value.length + ' / 140';
+            notesCounter.textContent = notesInput.value.length + ' / 60';
         }
         notesInput.addEventListener('input', updateCounter);
         updateCounter();

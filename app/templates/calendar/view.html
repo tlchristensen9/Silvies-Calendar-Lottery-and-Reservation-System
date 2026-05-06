@@ -52,7 +52,7 @@
 <!-- Reservation list -->
 <div class="card mt-2">
     <h2 class="card-title">All Reservations</h2>
-    {% if reservations %}
+    {% if upcoming_reservations %}
     <div class="table-wrap">
         <table>
             <thead>
@@ -65,13 +65,11 @@
                 </tr>
             </thead>
             <tbody>
-            {% for r in reservations %}
+            {% for r in upcoming_reservations %}
                 <tr>
                     <td>{{ r.member_name }}</td>
-                    <td>{{ r.start_date }} to {{ r.end_date }}</td>
-                    <td>{{ (r.end_date | replace('-','') | int - r.start_date | replace('-','') | int) if false else '' }}
-                        <!-- computed client-side -->
-                    </td>
+                    <td>{{ r.dates_display }}</td>
+                    <td>{{ r.num_days }}</td>
                     <td>{{ r.notes or '—' }}</td>
                     {% if current_user.is_admin or r.member_id == current_user.id %}
                     <td>

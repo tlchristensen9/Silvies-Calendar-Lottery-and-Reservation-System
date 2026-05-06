@@ -27,8 +27,10 @@ def view():
     draft_order = []
 
     is_my_turn = False
+    upcoming_reservations = []
     if season:
         reservations = PhaseEngine.get_reserved_dates(season)
+        upcoming_reservations = PhaseEngine.get_reserved_dates(season, exclude_past=True)
         can_reserve, reserve_reason = PhaseEngine.can_member_reserve(current_user, season)
 
         # Get draft order for display
@@ -59,6 +61,7 @@ def view():
     return render_template('calendar/view.html',
                            season=season,
                            reservations=reservations,
+                           upcoming_reservations=upcoming_reservations,
                            can_reserve=can_reserve,
                            reserve_reason=reserve_reason,
                            draft_order=draft_order,
@@ -118,6 +121,7 @@ def reserve():
             pass
 
     existing_reservations = PhaseEngine.get_reserved_dates(season) if season else []
+    upcoming_reservations = PhaseEngine.get_reserved_dates(season, exclude_past=True) if season else []
 
     calendar_config = PhaseEngine.get_calendar_config(season) if season else {}
 
@@ -133,6 +137,7 @@ def reserve():
     return render_template('calendar/reserve.html',
                            form=form, season=season,
                            reservations=existing_reservations,
+                           upcoming_reservations=upcoming_reservations,
                            calendar_config=calendar_config,
                            lottery_start=lottery_start)
 

@@ -248,12 +248,29 @@ class PhaseEngine:
         return True, 'You can book open dates anytime. Lottery dates depend on current phase.'
 
     @staticmethod
-    def get_reserved_dates(season):
-        reservations = Reservation.query.filter_by(season_id=season.id, is_cancelled=False).all()
-        return [{'id': r.id, 'member_id': r.member_id, 'member_name': r.member.name,
-                 'start_date': r.start_date.isoformat(), 'end_date': r.end_date.isoformat(),
-                 'is_blocked': r.is_blocked, 'block_label': r.block_label,
-                 'notes': r.notes, 'phase': r.phase_made} for r in reservations]
+    def _format_date_short(d):
+        """Format a date as 'Mon DD' (e.g., 'Apr 11')."""
+        return d.strftime('%b %d').replace(' 0', ' ')
+
+    @staticmethod
+    def get_reserved_dates(season, exclude_past=False):
+        query = Reservation.query.filter_by(season_id=season.id, is_cancelled=False)
+        if exclude_past:
+            query = query.filter(Reservation.end_date >= get_today())
+        reservations = query.all()
+        results = []
+        for r in reservations:
+            num_days = (r.end_date - r.start_date).days + 1
+            dates_display = (PhaseEngine._format_date_short(r.start_date) + ' to '
+                             + PhaseEngine._format_date_short(r.end_date))
+            results.append({
+                'id': r.id, 'member_id': r.member_id, 'member_name': r.member.name,
+                'start_date': r.start_date.isoformat(), 'end_date': r.end_date.isoformat(),
+                'dates_display': dates_display, 'num_days': num_days,
+                'is_blocked': r.is_blocked, 'block_label': r.block_label,
+                'notes': r.notes, 'phase': r.phase_made,
+            })
+        return results
 
     @staticmethod
     def get_calendar_config(season):

@@ -56,8 +56,8 @@ class SettingsForm(FlaskForm):
 class ReservationForm(FlaskForm):
     start_date = DateField('Start Date', validators=[DataRequired()])
     end_date = DateField('End Date', validators=[DataRequired()])
-    notes = TextAreaField('Notes', validators=[Optional(), Length(max=140,
-                          message='Notes must be 140 characters or fewer.')])
+    notes = TextAreaField('Notes', validators=[Optional(), Length(max=60,
+                          message='Notes must be 60 characters or fewer.')])
     submit = SubmitField('Reserve Dates')
 
 
@@ -86,8 +86,8 @@ class SeasonForm(FlaskForm):
 class EditReservationForm(FlaskForm):
     start_date = DateField('Start Date', validators=[DataRequired()])
     end_date = DateField('End Date', validators=[DataRequired()])
-    notes = TextAreaField('Notes', validators=[Optional(), Length(max=140,
-                          message='Notes must be 140 characters or fewer.')])
+    notes = TextAreaField('Notes', validators=[Optional(), Length(max=60,
+                          message='Notes must be 60 characters or fewer.')])
     submit = SubmitField('Save Changes')
 
 
@@ -95,8 +95,8 @@ class AdminReservationForm(FlaskForm):
     member_id = SelectField('Member', coerce=int, validators=[DataRequired()])
     start_date = DateField('Start Date', validators=[DataRequired()])
     end_date = DateField('End Date', validators=[DataRequired()])
-    notes = TextAreaField('Notes', validators=[Optional(), Length(max=140,
-                          message='Notes must be 140 characters or fewer.')])
+    notes = TextAreaField('Notes', validators=[Optional(), Length(max=60,
+                          message='Notes must be 60 characters or fewer.')])
     is_blocked = BooleanField('Block Dates (e.g., Annual Meeting)')
     block_label = StringField('Block Label', validators=[Optional(), Length(max=100)],
                               description='e.g., "Annual Meeting" — shown on calendar')
