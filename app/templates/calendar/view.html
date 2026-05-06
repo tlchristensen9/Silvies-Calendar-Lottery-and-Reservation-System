@@ -75,6 +75,10 @@
                     <td>{{ r.notes or '—' }}</td>
                     {% if current_user.is_admin or r.member_id == current_user.id %}
                     <td>
+                        {% if current_user.is_admin %}
+                        <a href="{{ url_for('admin.edit_reservation', res_id=r.id) }}"
+                           class="btn btn-secondary btn-sm">Edit</a>
+                        {% endif %}
                         <form method="POST" action="{{ url_for('calendar.cancel', reservation_id=r.id) }}"
                               style="display:inline"
                               onsubmit="return confirm('Cancel this reservation?');">

@@ -71,6 +71,7 @@ class PhaseEngine:
                 season.phase = PhaseState.PHASE2_FCFS
                 season.phase2_start = get_today()
                 db.session.commit()
+                email_service.notify_phase2_open(season)
         elif season.phase == PhaseState.PHASE3_REVERSE:
             remaining = DraftOrder.query.filter_by(season_id=season.id, phase3_picked=False).count()
             if remaining == 0:

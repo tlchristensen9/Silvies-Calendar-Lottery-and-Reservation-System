@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Edit Reservation — Silvies Club{% endblock %}
+
+{% block content %}
+<h1 style="font-size: 1.5rem; margin-bottom: 1rem;">Edit Reservation</h1>
+
+<div class="card">
+    <p class="text-small text-muted mb-2">
+        Editing reservation for <strong>{{ reservation.member.name }}</strong>
+        (originally {{ reservation.start_date }} to {{ reservation.end_date }}).
+    </p>
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.start_date.label }}
+            {{ form.start_date(type="date") }}
+        </div>
+
+        <div class="form-group">
+            {{ form.end_date.label }}
+            {{ form.end_date(type="date") }}
+        </div>
+
+        <div class="form-group">
+            {{ form.notes.label }}
+            {{ form.notes(rows=2, maxlength=140, placeholder="Optional notes", id="notes") }}
+            <small class="text-muted" id="notes-counter" style="font-size: 0.75rem;">0 / 140</small>
+        </div>
+
+        <div class="flex gap-1" style="margin-top: 1rem;">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a href="{{ url_for('calendar.view') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var notesInput = document.getElementById('notes');
+    var notesCounter = document.getElementById('notes-counter');
+    if (notesInput && notesCounter) {
+        function updateCounter() {
+            notesCounter.textContent = notesInput.value.length + ' / 140';
+        }
+        notesInput.addEventListener('input', updateCounter);
+        updateCounter();
+    }
+});
+</script>
+{% endblock %}

@@ -25,7 +25,7 @@ def _send(msg):
 
 def _site_url():
     """Return the base URL for links in emails."""
-    return current_app.config.get('SITE_URL', 'https://silviesclubreservations.pythonanywhere.com')
+    return current_app.config.get('SITE_URL', 'https://silviesclub.pythonanywhere.com')
 
 
 def notify_optin_open(season):

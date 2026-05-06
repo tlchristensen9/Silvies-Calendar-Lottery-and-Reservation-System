@@ -83,6 +83,14 @@ class SeasonForm(FlaskForm):
     submit = SubmitField('Create Season')
 
 
+class EditReservationForm(FlaskForm):
+    start_date = DateField('Start Date', validators=[DataRequired()])
+    end_date = DateField('End Date', validators=[DataRequired()])
+    notes = TextAreaField('Notes', validators=[Optional(), Length(max=140,
+                          message='Notes must be 140 characters or fewer.')])
+    submit = SubmitField('Save Changes')
+
+
 class AdminReservationForm(FlaskForm):
     member_id = SelectField('Member', coerce=int, validators=[DataRequired()])
     start_date = DateField('Start Date', validators=[DataRequired()])

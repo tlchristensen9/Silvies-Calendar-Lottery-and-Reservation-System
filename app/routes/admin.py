@@ -262,6 +262,48 @@ def admin_optin_member(season_id, member_id):
 
 # --- Trade / Cancel ---
 
+@admin_bp.route('/reservation/<int:res_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def edit_reservation(res_id):
+    """Admin edits an existing reservation's dates and notes."""
+    from app.forms import EditReservationForm
+    reservation = Reservation.query.get_or_404(res_id)
+    season = Season.query.get(reservation.season_id)
+
+    form = EditReservationForm(obj=reservation)
+
+    if form.validate_on_submit():
+        new_start = form.start_date.data
+        new_end = form.end_date.data
+
+        if new_start > new_end:
+            flash('Start date must be before end date.', 'danger')
+        else:
+            # Check for overlapping reservations (exclude the one being edited)
+            existing = Reservation.query.filter_by(
+                season_id=season.id, is_cancelled=False
+            ).filter(Reservation.id != reservation.id).all()
+            overlap = False
+            for r in existing:
+                if r.start_date <= new_end and r.end_date >= new_start:
+                    overlap = True
+                    flash(f'Dates overlap with reservation by {r.member.name} '
+                          f'({r.start_date} to {r.end_date}).', 'danger')
+                    break
+
+            if not overlap:
+                reservation.start_date = new_start
+                reservation.end_date = new_end
+                reservation.notes = form.notes.data
+                db.session.commit()
+                flash(f'Reservation for {reservation.member.name} updated: '
+                      f'{new_start} to {new_end}.', 'success')
+                return redirect(url_for('calendar.view'))
+
+    return render_template('admin/edit_reservation.html',
+                           form=form, reservation=reservation, season=season)
+
+
 @admin_bp.route('/reservation/<int:res_id>/trade', methods=['POST'])
 @admin_required
 def trade_reservation(res_id):
