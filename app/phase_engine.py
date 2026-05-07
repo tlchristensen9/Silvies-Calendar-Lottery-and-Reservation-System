@@ -257,7 +257,7 @@ class PhaseEngine:
         query = Reservation.query.filter_by(season_id=season.id, is_cancelled=False)
         if exclude_past:
             query = query.filter(Reservation.end_date >= get_today())
-        reservations = query.all()
+        reservations = query.order_by(Reservation.start_date).all()
         results = []
         for r in reservations:
             num_days = (r.end_date - r.start_date).days + 1
