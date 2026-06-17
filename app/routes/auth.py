@@ -1,6 +1,6 @@
 """Authentication routes: login, logout, change password, password recovery."""
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, make_response
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_mail import Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
@@ -24,8 +24,22 @@ def login():
             login_user(member, remember=form.remember_me.data)
             next_page = request.args.get('next')
             flash(f'Welcome back, {member.name}!', 'success')
-            return redirect(next_page or url_for('main.dashboard'))
+            response = make_response(redirect(next_page or url_for('main.dashboard')))
+            if form.remember_me.data:
+                # Remember the email address so it pre-fills on the next visit.
+                response.set_cookie('remembered_email', form.email.data.lower().strip(),
+                                    max_age=60 * 60 * 24 * 365, httponly=True, samesite='Lax')
+            else:
+                response.delete_cookie('remembered_email')
+            return response
         flash('Invalid email or password.', 'danger')
+
+    # On GET, pre-fill the email field from the remembered-email cookie.
+    if request.method == 'GET':
+        remembered = request.cookies.get('remembered_email')
+        if remembered:
+            form.email.data = remembered
+            form.remember_me.data = True
 
     return render_template('auth/login.html', form=form)
 
