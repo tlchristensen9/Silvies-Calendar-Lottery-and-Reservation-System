@@ -220,6 +220,9 @@ class PhaseEngine:
             current = season.current_pick
             if not current or current.member_id != member.id:
                 return False, 'It is not your turn to pick.'
+            if PhaseEngine.get_current_draft_reservation(season, member):
+                return False, ('You already have a pick for this phase. '
+                               'Cancel it from your dashboard to choose different dates.')
             return True, 'Your turn to pick!'
         if season.phase == PhaseState.PHASE2_FCFS:
             in_draw = DraftOrder.query.filter_by(season_id=season.id, member_id=member.id).first()
@@ -235,6 +238,9 @@ class PhaseEngine:
             current = season.current_pick
             if not current or current.member_id != member.id:
                 return False, 'It is not your turn to pick.'
+            if PhaseEngine.get_current_draft_reservation(season, member):
+                return False, ('You already have a pick for this phase. '
+                               'Cancel it from your dashboard to choose different dates.')
             return True, 'Your turn for a second pick!'
         if season.phase == PhaseState.OPEN_FCFS:
             return True, 'Open dates available.'
