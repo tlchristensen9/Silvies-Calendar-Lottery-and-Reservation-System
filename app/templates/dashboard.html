@@ -31,7 +31,17 @@
             Season dates: {{ season.season_start.strftime('%B %d') }} — {{ season.season_end.strftime('%B %d, %Y') }}
         </p>
 
-        {% if draft_position %}
+        {% if season.phase == 'phase1_optin' and current_user.can_enter_draft %}
+            {% set already_opted_in = current_user.draft_entries.filter_by(season_id=season.id).first() %}
+            {% if already_opted_in %}
+            <p style="color: var(--green-dark); font-size: 1.1rem; font-weight: 600;">&#10003; You are opted in for the draw.</p>
+            {% else %}
+            <form method="POST" action="{{ url_for('calendar.opt_in') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-primary">Opt In for the Draw</button>
+            </form>
+            {% endif %}
+        {% elif draft_position and season.phase not in ('setup', 'phase1_optin') %}
         <p class="text-small">Your draft position: <strong>#{{ draft_position }}</strong></p>
         {% endif %}
 
@@ -93,17 +103,6 @@
         <p class="mt-1 text-small text-muted">{{ reserve_reason }}</p>
         {% endif %}
 
-        {% if season.phase == 'phase1_optin' and current_user.can_enter_draft %}
-            {% set already_opted_in = current_user.draft_entries.filter_by(season_id=season.id).first() %}
-            {% if already_opted_in %}
-            <p class="mt-1 text-small" style="color: var(--green-dark);">You are opted in for the draw.</p>
-            {% else %}
-            <form method="POST" action="{{ url_for('calendar.opt_in') }}" class="mt-1">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-primary">Opt In for the Draw</button>
-            </form>
-            {% endif %}
-        {% endif %}
 
         {% if current_pick and not is_my_turn %}
         <div class="mt-2 text-small">

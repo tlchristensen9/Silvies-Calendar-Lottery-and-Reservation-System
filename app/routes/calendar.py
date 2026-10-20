@@ -205,7 +205,7 @@ def opt_in():
         return redirect(url_for('main.dashboard'))
 
     if not current_user.can_enter_draft:
-        flash('Lifetime members cannot enter the draft.', 'info')
+        flash('Your account is not eligible for the draw.', 'info')
         return redirect(url_for('main.dashboard'))
 
     existing = DraftOrder.query.filter_by(

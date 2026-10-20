@@ -33,7 +33,7 @@ def notify_optin_open(season):
     if not _emails_enabled():
         return
     members = Member.query.filter_by(is_active_member=True).filter(
-        Member.role != MemberRole.LIFETIME
+        Member.role == MemberRole.REGULAR
     ).all()
     url = f"{_site_url()}/calendar/"
     for member in members:
@@ -105,7 +105,7 @@ def notify_phase2_open(season):
     ]
     members = Member.query.filter_by(is_active_member=True).filter(
         Member.id.notin_(draft_member_ids) if draft_member_ids else True,
-        Member.role != MemberRole.LIFETIME
+        Member.role == MemberRole.REGULAR
     ).all()
     url = f"{_site_url()}/calendar/"
     for member in members:

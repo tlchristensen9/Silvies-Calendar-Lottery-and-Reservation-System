@@ -51,7 +51,7 @@ class Member(UserMixin, db.Model):
 
     @property
     def can_enter_draft(self):
-        return self.role in (MemberRole.REGULAR, MemberRole.ADMIN)
+        return self.role == MemberRole.REGULAR
 
     def __repr__(self):
         return f'<Member {self.name}>'

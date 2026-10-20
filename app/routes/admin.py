@@ -243,6 +243,9 @@ def admin_optin_member(season_id, member_id):
     if season.phase != PhaseState.PHASE1_OPTIN:
         flash('Opt-in is not currently open.', 'warning')
         return redirect(url_for('admin.dashboard'))
+    if not member.can_enter_draft:
+        flash(f'{member.name} is not eligible for the draw.', 'warning')
+        return redirect(url_for('admin.dashboard'))
 
     existing = DraftOrder.query.filter_by(
         season_id=season.id, member_id=member.id).first()

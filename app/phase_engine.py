@@ -115,6 +115,9 @@ class PhaseEngine:
         if season.phase != PhaseState.PHASE1_OPTIN:
             raise ValueError(f'Cannot run draw from phase: {season.phase}')
         entries = DraftOrder.query.filter_by(season_id=season.id).all()
+        for entry in [e for e in entries if not e.member.can_enter_draft]:
+            db.session.delete(entry)
+        entries = [e for e in entries if e.member.can_enter_draft]
         if not entries:
             raise ValueError('No members have opted in to the draw.')
         random.shuffle(entries)
@@ -212,6 +215,9 @@ class PhaseEngine:
         """Check if a member can reserve in lottery dates, phase-dependent."""
         if not season:
             return False, 'No active season.'
+        if member.is_admin:
+            return False, ('The Spike account does not take part in the lottery phases. '
+                           'Use Admin > Reserve to create or change lottery-period reservations.')
         if season.phase == PhaseState.SETUP:
             return False, 'Season has not started yet.'
         if season.phase == PhaseState.PHASE1_OPTIN:
