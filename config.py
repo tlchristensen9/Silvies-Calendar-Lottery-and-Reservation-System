@@ -1,13 +1,16 @@
 """Application configuration for Silvies Club Reservation System."""
 
 import os
+import secrets
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
 class Config:
     """Base configuration."""
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-change-in-production')
+    # Set SECRET_KEY on the server (PythonAnywhere WSGI file). The random fallback is for
+    # local development only — it changes on every restart and logs everyone out.
+    SECRET_KEY = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         'DATABASE_URL',
         'sqlite:///' + os.path.join(basedir, 'instance', 'silvies.db')
@@ -35,7 +38,7 @@ class Config:
     MAIL_PORT = int(os.environ.get('MAIL_PORT', 587))
     MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME', 'silviesclubreservations@gmail.com')
-    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', 'yknt weut oego ftdb')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', '')  # set on the server only — never commit it
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'silviesclubreservations@gmail.com')
 
     # Password reset token expiry (seconds)
